@@ -99,6 +99,7 @@ class ProfileViewSet(viewsets.ViewSet):
             "profile_image": user.profile_image.url if user.profile_image else None,
             "about": user.about,
             "coin_count": user.coin_count,
+            "badge": user.badge,  # Assuming badge is a field in CustomUser
         }, status=status.HTTP_200_OK)
 
     def update(self, request):

@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView  # Import TemplateView
+from django.conf import settings  # Add this import
+from django.conf.urls.static import static  # Add this import
 
 from pratilipiPc import settings
 
@@ -43,3 +45,5 @@ if settings.DEBUG:
     urlpatterns = [
         path('__debug__/', include(debug_toolbar.urls)),
     ] + urlpatterns
+    # Add media serving for development
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
