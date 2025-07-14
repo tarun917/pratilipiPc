@@ -9786,3 +9786,236 @@ ALTER TABLE creatorDesk_creatorcomics ADD FOREIGN KEY (submission_id_id) REFEREN
 (0.002) INSERT INTO `token_blacklist_outstandingtoken` (`user_id`, `jti`, `token`, `created_at`, `expires_at`) VALUES (9, '68c2287d97c543e885a94a55ac706bf8', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU1MjI1MCwiaWF0IjoxNzUyNDY1ODUwLCJqdGkiOiI2OGMyMjg3ZDk3YzU0M2U4ODVhOTRhNTVhYzcwNmJmOCIsInVzZXJfaWQiOjl9.hUvqp3j-s67TdQ-_SvtR8YbRsx8vuHwtsWNbY0ZNCiY', '2025-07-14 04:04:10.841402', '2025-07-15 04:04:10'); args=[9, '68c2287d97c543e885a94a55ac706bf8', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU1MjI1MCwiaWF0IjoxNzUyNDY1ODUwLCJqdGkiOiI2OGMyMjg3ZDk3YzU0M2U4ODVhOTRhNTVhYzcwNmJmOCIsInVzZXJfaWQiOjl9.hUvqp3j-s67TdQ-_SvtR8YbRsx8vuHwtsWNbY0ZNCiY', '2025-07-14 04:04:10.841402', '2025-07-15 04:04:10']; alias=default
 (0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
 (0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 9 LIMIT 21; args=(9,); alias=default
+(0.005) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.012) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.006) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.010) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.000) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.026) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`username` = 'admin' LIMIT 21; args=('admin',); alias=default
+(0.004) SELECT 1 AS `a` FROM `django_session` WHERE `django_session`.`session_key` = 'cj10l53qsagdf1ogus87wngys7p3bfpc' LIMIT 1; args=(1, 'cj10l53qsagdf1ogus87wngys7p3bfpc'); alias=default
+(0.000) BEGIN; args=None; alias=default
+(0.001) INSERT INTO `django_session` (`session_key`, `session_data`, `expire_date`) VALUES ('cj10l53qsagdf1ogus87wngys7p3bfpc', 'e30:1ubH7X:E3IPEFZ44jBaU1HI-pMFphbkMFpD8yfcMFY3TdCLfQM', '2025-07-28 11:13:19.103804'); args=('cj10l53qsagdf1ogus87wngys7p3bfpc', 'e30:1ubH7X:E3IPEFZ44jBaU1HI-pMFphbkMFpD8yfcMFY3TdCLfQM', '2025-07-28 11:13:19.103804'); alias=default
+(0.002) COMMIT; args=None; alias=default
+(0.002) UPDATE `profileDesk_customuser` SET `last_login` = '2025-07-14 11:13:19.107612' WHERE `profileDesk_customuser`.`id` = 6; args=('2025-07-14 11:13:19.107612', 6); alias=default
+(0.000) BEGIN; args=None; alias=default
+(0.000) UPDATE `django_session` SET `session_data` = '.eJxVjDsOwyAQRO9CHSEDZoGU6X0GtHw2OIlAMnYV5e6xJRfJlPPezJt53Nbit54XPyd2ZcAuv13A-Mz1AOmB9d54bHVd5sAPhZ-086ml_Lqd7t9BwV72tXNWBImkMgACKhDWhmEcjDZ6jwokQGsSAp2M0jkHGUGFkcgIBZrY5wu7uTbO:1ubH7X:kwSt8aDDgdKJGSU8sgi_qt7ocM-K1hVl7YeAIvXu6P0', `expire_date` = '2025-07-28 11:13:19.110233' WHERE `django_session`.`session_key` = 'cj10l53qsagdf1ogus87wngys7p3bfpc'; args=('.eJxVjDsOwyAQRO9CHSEDZoGU6X0GtHw2OIlAMnYV5e6xJRfJlPPezJt53Nbit54XPyd2ZcAuv13A-Mz1AOmB9d54bHVd5sAPhZ-086ml_Lqd7t9BwV72tXNWBImkMgACKhDWhmEcjDZ6jwokQGsSAp2M0jkHGUGFkcgIBZrY5wu7uTbO:1ubH7X:kwSt8aDDgdKJGSU8sgi_qt7ocM-K1hVl7YeAIvXu6P0', '2025-07-28 11:13:19.110233', 'cj10l53qsagdf1ogus87wngys7p3bfpc'); alias=default
+(0.000) COMMIT; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.002) SELECT `django_session`.`session_key`, `django_session`.`session_data`, `django_session`.`expire_date` FROM `django_session` WHERE (`django_session`.`expire_date` > '2025-07-14 11:13:19.124229' AND `django_session`.`session_key` = 'cj10l53qsagdf1ogus87wngys7p3bfpc') LIMIT 21; args=('2025-07-14 11:13:19.124229', 'cj10l53qsagdf1ogus87wngys7p3bfpc'); alias=default
+(0.000) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.009) SELECT `django_admin_log`.`id`, `django_admin_log`.`action_time`, `django_admin_log`.`user_id`, `django_admin_log`.`content_type_id`, `django_admin_log`.`object_id`, `django_admin_log`.`object_repr`, `django_admin_log`.`action_flag`, `django_admin_log`.`change_message`, `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge`, `django_content_type`.`id`, `django_content_type`.`app_label`, `django_content_type`.`model` FROM `django_admin_log` INNER JOIN `profileDesk_customuser` ON (`django_admin_log`.`user_id` = `profileDesk_customuser`.`id`) LEFT OUTER JOIN `django_content_type` ON (`django_admin_log`.`content_type_id` = `django_content_type`.`id`) WHERE `django_admin_log`.`user_id` = 6 ORDER BY `django_admin_log`.`action_time` DESC LIMIT 10; args=(6,); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.003) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.001) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.001) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.007) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.000) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.007) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.002) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.004) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.001) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.004) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.010) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.007) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
+(0.002) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.079) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`username` = 'tarunbawari' LIMIT 21; args=('tarunbawari',); alias=default
+(0.004) INSERT INTO `token_blacklist_outstandingtoken` (`user_id`, `jti`, `token`, `created_at`, `expires_at`) VALUES (9, '288c0364d9684447b4418832d299286b', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU5Njk0OSwiaWF0IjoxNzUyNTEwNTQ5LCJqdGkiOiIyODhjMDM2NGQ5Njg0NDQ3YjQ0MTg4MzJkMjk5Mjg2YiIsInVzZXJfaWQiOjl9.eOA7LXhnaKz6S2s7oupw4TaZbaYtiEoUOc3me9QRBSU', '2025-07-14 16:29:09.752525', '2025-07-15 16:29:09'); args=[9, '288c0364d9684447b4418832d299286b', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU5Njk0OSwiaWF0IjoxNzUyNTEwNTQ5LCJqdGkiOiIyODhjMDM2NGQ5Njg0NDQ3YjQ0MTg4MzJkMjk5Mjg2YiIsInVzZXJfaWQiOjl9.eOA7LXhnaKz6S2s7oupw4TaZbaYtiEoUOc3me9QRBSU', '2025-07-14 16:29:09.752525', '2025-07-15 16:29:09']; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.000) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 9 LIMIT 21; args=(9,); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 9 LIMIT 21; args=(9,); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`username` = 'admin' LIMIT 21; args=('admin',); alias=default
+(0.002) INSERT INTO `token_blacklist_outstandingtoken` (`user_id`, `jti`, `token`, `created_at`, `expires_at`) VALUES (6, '82c061639758453f8af8e8400bee1853', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU5NzA3NSwiaWF0IjoxNzUyNTEwNjc1LCJqdGkiOiI4MmMwNjE2Mzk3NTg0NTNmOGFmOGU4NDAwYmVlMTg1MyIsInVzZXJfaWQiOjZ9.34bT1I96XexRkMmpxU6rHshWePzrr04VPMWkiP4X9jg', '2025-07-14 16:31:15.845652', '2025-07-15 16:31:15'); args=[6, '82c061639758453f8af8e8400bee1853', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU5NzA3NSwiaWF0IjoxNzUyNTEwNjc1LCJqdGkiOiI4MmMwNjE2Mzk3NTg0NTNmOGFmOGU4NDAwYmVlMTg1MyIsInVzZXJfaWQiOjZ9.34bT1I96XexRkMmpxU6rHshWePzrr04VPMWkiP4X9jg', '2025-07-14 16:31:15.845652', '2025-07-15 16:31:15']; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.008) UPDATE `profileDesk_customuser` SET `password` = 'pbkdf2_sha256$1000000$MTsWsqvS10HEs50KANeFMJ$67G07riSYlKwfoKeeN20SiRKEkP3KMz2PsRd7TaqfYI=', `last_login` = '2025-07-14 11:13:19.107612', `is_superuser` = 1, `username` = 'admin', `full_name` = '', `email` = 'admin@gmail.com', `mobile_number` = '', `unique_id` = 'PRTL6de8a3', `profile_image` = 'profiles/c5347ee0-6aff-4bc7-9ac5-8057927a49b4.jpg', `about` = 'hello admin, kaiae hai aap... Jabardast', `coin_count` = 0, `terms_accepted` = 0, `is_active` = 1, `is_staff` = 1, `date_joined` = '2025-07-02 12:28:17.903065', `badge` = 'Copper' WHERE `profileDesk_customuser`.`id` = 6; args=('pbkdf2_sha256$1000000$MTsWsqvS10HEs50KANeFMJ$67G07riSYlKwfoKeeN20SiRKEkP3KMz2PsRd7TaqfYI=', '2025-07-14 11:13:19.107612', True, 'admin', '', 'admin@gmail.com', '', 'PRTL6de8a3', 'profiles/c5347ee0-6aff-4bc7-9ac5-8057927a49b4.jpg', 'hello admin, kaiae hai aap... Jabardast', 0, False, True, True, '2025-07-02 12:28:17.903065', 'Copper', 6); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.000) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.004) UPDATE `profileDesk_customuser` SET `password` = 'pbkdf2_sha256$1000000$MTsWsqvS10HEs50KANeFMJ$67G07riSYlKwfoKeeN20SiRKEkP3KMz2PsRd7TaqfYI=', `last_login` = '2025-07-14 11:13:19.107612', `is_superuser` = 1, `username` = 'admin', `full_name` = '', `email` = 'admin@gmail.com', `mobile_number` = '', `unique_id` = 'PRTL6de8a3', `profile_image` = 'profiles/70e870a7-16b8-4585-8bd7-9c9ace1b060a.jpg', `about` = 'hello admin, kaiae hai aap... Jabardast', `coin_count` = 0, `terms_accepted` = 0, `is_active` = 1, `is_staff` = 1, `date_joined` = '2025-07-02 12:28:17.903065', `badge` = 'Copper' WHERE `profileDesk_customuser`.`id` = 6; args=('pbkdf2_sha256$1000000$MTsWsqvS10HEs50KANeFMJ$67G07riSYlKwfoKeeN20SiRKEkP3KMz2PsRd7TaqfYI=', '2025-07-14 11:13:19.107612', True, 'admin', '', 'admin@gmail.com', '', 'PRTL6de8a3', 'profiles/70e870a7-16b8-4585-8bd7-9c9ace1b060a.jpg', 'hello admin, kaiae hai aap... Jabardast', 0, False, True, True, '2025-07-02 12:28:17.903065', 'Copper', 6); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.000) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.000) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`username` = 'bawaritarun' LIMIT 21; args=('bawaritarun',); alias=default
+(0.002) INSERT INTO `token_blacklist_outstandingtoken` (`user_id`, `jti`, `token`, `created_at`, `expires_at`) VALUES (10, 'b854c0e533474993ad4c894b1a79631d', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU5Nzc5MSwiaWF0IjoxNzUyNTExMzkxLCJqdGkiOiJiODU0YzBlNTMzNDc0OTkzYWQ0Yzg5NGIxYTc5NjMxZCIsInVzZXJfaWQiOjEwfQ.XPIxSRD6iGIIbLeyQcx_sKIlDkPXYCKrBb6kvhXO1fs', '2025-07-14 16:43:11.262141', '2025-07-15 16:43:11'); args=[10, 'b854c0e533474993ad4c894b1a79631d', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjU5Nzc5MSwiaWF0IjoxNzUyNTExMzkxLCJqdGkiOiJiODU0YzBlNTMzNDc0OTkzYWQ0Yzg5NGIxYTc5NjMxZCIsInVzZXJfaWQiOjEwfQ.XPIxSRD6iGIIbLeyQcx_sKIlDkPXYCKrBb6kvhXO1fs', '2025-07-14 16:43:11.262141', '2025-07-15 16:43:11']; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.000) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 10 LIMIT 21; args=(10,); alias=default
+(0.000) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.007) SELECT `django_session`.`session_key`, `django_session`.`session_data`, `django_session`.`expire_date` FROM `django_session` WHERE (`django_session`.`expire_date` > '2025-07-14 16:48:39.459872' AND `django_session`.`session_key` = '9jw72tej17gelrojkgx6hv7nslswlauu') LIMIT 21; args=('2025-07-14 16:48:39.459872', '9jw72tej17gelrojkgx6hv7nslswlauu'); alias=default
+(0.001) SELECT `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge` FROM `profileDesk_customuser` WHERE `profileDesk_customuser`.`id` = 6 LIMIT 21; args=(6,); alias=default
+(0.007) SELECT `django_admin_log`.`id`, `django_admin_log`.`action_time`, `django_admin_log`.`user_id`, `django_admin_log`.`content_type_id`, `django_admin_log`.`object_id`, `django_admin_log`.`object_repr`, `django_admin_log`.`action_flag`, `django_admin_log`.`change_message`, `profileDesk_customuser`.`id`, `profileDesk_customuser`.`password`, `profileDesk_customuser`.`last_login`, `profileDesk_customuser`.`is_superuser`, `profileDesk_customuser`.`username`, `profileDesk_customuser`.`full_name`, `profileDesk_customuser`.`email`, `profileDesk_customuser`.`mobile_number`, `profileDesk_customuser`.`unique_id`, `profileDesk_customuser`.`profile_image`, `profileDesk_customuser`.`about`, `profileDesk_customuser`.`coin_count`, `profileDesk_customuser`.`terms_accepted`, `profileDesk_customuser`.`is_active`, `profileDesk_customuser`.`is_staff`, `profileDesk_customuser`.`date_joined`, `profileDesk_customuser`.`badge`, `django_content_type`.`id`, `django_content_type`.`app_label`, `django_content_type`.`model` FROM `django_admin_log` INNER JOIN `profileDesk_customuser` ON (`django_admin_log`.`user_id` = `profileDesk_customuser`.`id`) LEFT OUTER JOIN `django_content_type` ON (`django_admin_log`.`content_type_id` = `django_content_type`.`id`) WHERE `django_admin_log`.`user_id` = 6 ORDER BY `django_admin_log`.`action_time` DESC LIMIT 10; args=(6,); alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.000) SELECT `django_session`.`session_key`, `django_session`.`session_data`, `django_session`.`expire_date` FROM `django_session` WHERE (`django_session`.`expire_date` > '2025-07-14 16:48:39.632733' AND `django_session`.`session_key` = '9jw72tej17gelrojkgx6hv7nslswlauu') LIMIT 21; args=('2025-07-14 16:48:39.632733', '9jw72tej17gelrojkgx6hv7nslswlauu'); alias=default
+(0.004) 
+                SELECT VERSION(),
+                       @@sql_mode,
+                       @@default_storage_engine,
+                       @@sql_auto_is_null,
+                       @@lower_case_table_names,
+                       CONVERT_TZ('2001-01-01 01:00:00', 'UTC', 'UTC') IS NOT NULL
+            ; args=None; alias=default
+(0.000) SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; args=None; alias=default
+(0.009) 
+            SELECT
+                table_name,
+                table_type,
+                table_comment
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+            ; args=None; alias=default
+(0.007) SELECT `django_migrations`.`id`, `django_migrations`.`app`, `django_migrations`.`name`, `django_migrations`.`applied` FROM `django_migrations`; args=(); alias=default
