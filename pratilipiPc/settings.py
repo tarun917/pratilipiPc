@@ -12,7 +12,7 @@ SECRET_KEY = config('SECRET_KEY')  # Secure key from environment
 # Security settings
 DEBUG = True  # Enable debug mode for development (disable in production)
 ALLOWED_HOSTS = ['*']  # Allow all for testing (restrict in production to your IPs like '192.168.1.4', '10.0.2.2')
-INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.4']  # Add laptop IP for debug toolbar
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.4', '10.10.2.92', '10.82.85.84']  # Add laptop IP for debug toolbar
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',  # Admin interface
