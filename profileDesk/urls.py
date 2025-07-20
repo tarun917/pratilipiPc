@@ -1,24 +1,15 @@
 from django.urls import path, include
-from .views import AuthViewSet, ProfileViewSet, logout_view, UserViewSet
+from .views import ProfileViewSet, UserViewSet
 from rest_framework.routers import DefaultRouter
 
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')  # New: /api/users/
 
-auth_patterns = [
-    path('signup/', AuthViewSet.as_view({'post': 'register'}), name='auth-signup'),
-    path('login/', AuthViewSet.as_view({'post': 'login'}), name='auth-login'),
-    path('logout/', logout_view, name='auth-logout'),
-]
 
 profile_patterns = [
     path('profile/picture/', ProfileViewSet.as_view({'post': 'upload_image'}), name='profile-picture'),
     path('profile/', ProfileViewSet.as_view({'get': 'retrieve', 'patch': 'update'}), name='profile-retrieve-update'),
 ]
 
-urlpatterns = [
-    path('auth/', include(auth_patterns)),
-    path('', include(profile_patterns)),
-    path('', include(router.urls)),  # Add router for users
-]
+urlpatterns = profile_patterns + router.urls

@@ -1,5 +1,6 @@
 
 venv/
+.venv/
 *.pyc
 __pycache__/
 *.pyo
@@ -8,3 +9,14 @@ __pycache__/
 *.sqlite3
 *.env
 debug.log
+dump.rdb
+# Media uploads
+media/
+# IDE/config files
+.DS_Store
+.vscode/
+.idea/
+# Log files
+*.log
+# System files
+Thumbs.db

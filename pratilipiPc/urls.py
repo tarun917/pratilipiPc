@@ -25,6 +25,7 @@ from pratilipiPc import settings
 urlpatterns = [
     path('', TemplateView.as_view(template_name='welcome.html'), name='welcome'),  # Root URL
     path('admin/', admin.site.urls),
+    path('api/auth/', include('authDesk.urls')),  # Include authDesk URLs under /api/auth/
     path('api/', include('profileDesk.urls')),  # Include profileDesk URLs under /api/
     path('api/community/', include('communityDesk.urls')), # Include communityDesk URLs under /api/community/
     path('api/store/', include('storeDesk.urls')),  # Include storeDesk URLs under /api/store/

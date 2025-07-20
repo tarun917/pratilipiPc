@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # JWT authentication
     'rest_framework_simplejwt.token_blacklist',  # Token blacklisting for logout
     'profileDesk',  # Custom app for Android users
+    'authDesk',  # New authentication app
     'communityDesk', # Custom app for community features
     'storeDesk',  # Custom app for store features
     'homeDesk',  # Custom app for home features
