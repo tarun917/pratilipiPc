@@ -1,3 +1,5 @@
+import json
+import logging
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +11,11 @@ from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
+from rest_framework.generics import ListAPIView
+from profileDesk.serializers import SearchUserSerializer
+
+
+logger = logging.getLogger(__name__)
 
 class PostPagination(PageNumberPagination):
     page_size = 10
@@ -22,7 +29,18 @@ class PostViewSet(viewsets.ModelViewSet):
     pagination_class = PostPagination  # Add pagination
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Process hashtags from form-data
+        hashtags_input = self.request.data.get('hashtags', '')
+        hashtags = []
+        if hashtags_input:
+            hashtags = [tag.strip() for tag in hashtags_input.split(',') if tag.strip().startswith('#') and tag.strip()[1:].replace('_', '').isalnum()]
+
+        # Handle image upload
+        if 'image' in self.request.FILES:
+            serializer.save(user=self.request.user, image_url=self.request.FILES['image'], hashtags=hashtags)
+        else:
+            serializer.save(user=self.request.user, hashtags=hashtags)
+        logger.info(f"Post created by {self.request.user.username} with hashtags: {hashtags}")
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -182,8 +200,23 @@ class SearchViewSet(viewsets.ViewSet):
         query = request.query_params.get('q', '')
         posts = Post.objects.filter(
             Q(text__icontains=query) | Q(hashtags__icontains=query)
-        ).values('id', 'text', 'user__username', 'created_at')
+        )
         users = CustomUser.objects.filter(
             Q(username__icontains=query) | Q(full_name__icontains=query)
-        ).values('id', 'username', 'full_name')
-        return Response({"posts": list(posts), "users": list(users)}, status=status.HTTP_200_OK)
+        )
+
+        # Use proper serializers with context for 'is_liked' and 'is_following'
+        posts_serialized = PostSerializer(posts, many=True, context={'request': request}).data
+        users_serialized = SearchUserSerializer(users, many=True, context={'request': request}).data
+
+        return Response({"posts": posts_serialized, "users": users_serialized}, status=status.HTTP_200_OK)
+    
+
+class UserPostsView(ListAPIView):
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = PostPagination  # Already defined
+
+    def get_queryset(self):
+        user_id = self.kwargs.get('user_id')
+        return Post.objects.filter(user__id=user_id).order_by('-created_at')

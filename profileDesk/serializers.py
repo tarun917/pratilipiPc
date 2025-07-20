@@ -139,3 +139,47 @@ class ProfileImageSerializer(serializers.ModelSerializer):
         instance.profile_image = validated_data.get('profile_image', instance.profile_image)
         instance.save()
         return instance
+    
+
+# New: Serializer for public user details (limited fields)
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'full_name', 'profile_image', 'badge']  # Public fields only
+        extra_kwargs = {
+            'profile_image': {'read_only': True},
+        }
+
+
+# profileDesk/short_serializers.py
+
+from rest_framework import serializers
+from .models import CustomUser
+
+class ShortUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'profile_image', 'badge']
+        extra_kwargs = {
+            'profile_image': {'read_only': True},
+        }
+        read_only_fields = ['id', 'username', 'profile_image', 'badge']
+
+
+
+class SearchUserSerializer(serializers.ModelSerializer):
+    is_following = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'full_name', 'profile_image', 'badge', 'is_following']
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            # User cannot follow themselves
+            if request.user == obj:
+                return False
+            from communityDesk.models import Follow
+            return Follow.objects.filter(follower=request.user, following=obj).exists()
+        return False

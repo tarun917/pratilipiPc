@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 import logging
 
 from .models import CustomUser
-from .serializers import UserSerializer, LoginSerializer, ProfileUpdateSerializer, ProfileImageSerializer
+from .serializers import CustomUserSerializer, UserSerializer, LoginSerializer, ProfileUpdateSerializer, ProfileImageSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -118,3 +118,16 @@ class ProfileViewSet(viewsets.ViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+# New: UserViewSet for getting public user details by ID
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+    permission_classes = [IsAuthenticated]  # Authenticated only
+
+    def retrieve(self, request, pk=None):
+        user = self.get_object()
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)

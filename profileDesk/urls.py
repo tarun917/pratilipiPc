@@ -1,5 +1,10 @@
 from django.urls import path, include
-from .views import AuthViewSet, ProfileViewSet, logout_view
+from .views import AuthViewSet, ProfileViewSet, logout_view, UserViewSet
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')  # New: /api/users/
 
 auth_patterns = [
     path('signup/', AuthViewSet.as_view({'post': 'register'}), name='auth-signup'),
@@ -15,4 +20,5 @@ profile_patterns = [
 urlpatterns = [
     path('auth/', include(auth_patterns)),
     path('', include(profile_patterns)),
+    path('', include(router.urls)),  # Add router for users
 ]

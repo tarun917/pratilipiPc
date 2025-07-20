@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PostViewSet, CommentViewSet, PollViewSet, VoteViewSet, FollowViewSet, LikeViewSet, SearchViewSet
+from .views import PostViewSet, CommentViewSet, PollViewSet, VoteViewSet, FollowViewSet, LikeViewSet, SearchViewSet, UserPostsView
 
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
@@ -17,4 +17,5 @@ urlpatterns = router.urls + [
     path('users/<int:user_pk>/follow-status/', FollowViewSet.as_view({'get': 'follow_status'}), name='follow-status'),
     path('users/<int:user_pk>/followers/', FollowViewSet.as_view({'get': 'followers'}), name='followers'),
     path('users/<int:user_pk>/following/', FollowViewSet.as_view({'get': 'following'}), name='following'),
+    path('users/<int:user_id>/posts/', UserPostsView.as_view(), name='user-posts'),  # New endpoint for user posts
 ]
