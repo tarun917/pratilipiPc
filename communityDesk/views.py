@@ -29,12 +29,8 @@ class PostViewSet(viewsets.ModelViewSet):
     pagination_class = PostPagination  # Add pagination
 
     def perform_create(self, serializer):
-        # Process hashtags from form-data
-        hashtags_input = self.request.data.get('hashtags', '')
-        hashtags = []
-        if hashtags_input:
-            hashtags = [tag.strip() for tag in hashtags_input.split(',') if tag.strip().startswith('#') and tag.strip()[1:].replace('_', '').isalnum()]
-
+        # Use validated hashtags from serializer
+        hashtags = serializer.validated_data.get('hashtags', [])
         # Handle image upload
         if 'image' in self.request.FILES:
             serializer.save(user=self.request.user, image_url=self.request.FILES['image'], hashtags=hashtags)

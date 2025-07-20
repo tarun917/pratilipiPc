@@ -27,6 +27,18 @@ class PostSerializer(serializers.ModelSerializer):
             'hashtags': {'required': False},
         }
 
+    def validate_hashtags(self, value):
+        # Accept hashtags as a space-separated string, e.g., '#tarun #bhawin'
+        if not value:
+            return []
+        if isinstance(value, str):
+            hashtags = [tag for tag in value.strip().split() if tag]
+        else:
+            hashtags = value
+        if not all(isinstance(tag, str) and re.match(r'^#\w+$', tag) for tag in hashtags):
+            raise ValidationError("Hashtags must start with # and contain only letters, numbers, or underscores.")
+        return hashtags
+
     def get_like_count(self, obj):
         return Like.objects.filter(post=obj).count()
 
@@ -62,38 +74,7 @@ class PostSerializer(serializers.ModelSerializer):
             raise ValidationError("Text must contain at least one alphanumeric character.")
         return value
 
-    def validate_hashtags(self, value):
-        try:
-            if value:
-                # If value is a string (from form-data or dumped JSON), try to decode it as JSON
-                if isinstance(value, str):
-                    hashtags = json.loads(value) if value else []
-                else:
-                    hashtags = value
-                if not all(isinstance(tag, str) and re.match(r'^#\w+$', tag) for tag in hashtags):
-                    raise ValidationError("Hashtags must start with # and contain only letters, numbers, or underscores.")
-            else:
-                hashtags = []
-            return hashtags  # Return the list for saving
-        except json.JSONDecodeError:
-            raise ValidationError("Hashtags must be valid JSON.")
 
-
-    def validate_hashtags(self, value):
-        try:
-            if value:
-            # If value is a string (from form-data), try to decode it as JSON
-                if isinstance(value, str):
-                    hashtags = json.loads(value) if value else []
-            else:
-                hashtags = value
-            if not all(isinstance(tag, str) and re.match(r'^#\w+$', tag) for tag in hashtags):
-                raise ValidationError("Hashtags must start with # and contain only letters, numbers, or underscores.")
-            else:
-                hashtags = []
-            return hashtags  # Return the list for saving
-        except json.JSONDecodeError:
-            raise ValidationError("Hashtags must be valid JSON.")
 
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)  # Allow user to be set automatically
