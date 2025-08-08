@@ -14,16 +14,19 @@ class ProfileViewSet(viewsets.ViewSet):
 
     def retrieve(self, request):
         user = request.user
+        profile_image_url = user.profile_image.url if user.profile_image else None
+        if profile_image_url and not profile_image_url.startswith('http'):
+            profile_image_url = request.build_absolute_uri(profile_image_url)
         return Response({
-            "username": user.username,
-            "full_name": user.full_name,
-            "email": user.email,
-            "mobile_number": user.mobile_number,
-            "profile_image": user.profile_image.url if user.profile_image else None,
-            "about": user.about,
-            "coin_count": user.coin_count,
-            "badge": user.badge,  # Assuming badge is a field in CustomUser
-        }, status=status.HTTP_200_OK)
+        "username": user.username,
+        "full_name": user.full_name,
+        "email": user.email,
+        "mobile_number": user.mobile_number,
+        "profile_image": profile_image_url,
+        "about": user.about,
+        "coin_count": user.coin_count,
+        "badge": user.badge,
+    }, status=status.HTTP_200_OK)
 
     def update(self, request):
         user = request.user

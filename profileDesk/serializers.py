@@ -5,10 +5,20 @@ from django.core.exceptions import ValidationError
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['profile_image', 'about', 'coin_count']
+        fields = ['profile_image', 'about', 'coin_count', 'email', 'mobile_number', 'date_joined']
         extra_kwargs = {
             'coin_count': {'read_only': True},
+            'email': {'required': False},
+            'mobile_number': {'required': False},
         }
+
+    def update(self, instance, validated_data):
+        instance.profile_image = validated_data.get('profile_image', instance.profile_image)
+        instance.about = validated_data.get('about', instance.about)
+        instance.email = validated_data.get('email', instance.email)
+        instance.mobile_number = validated_data.get('mobile_number', instance.mobile_number)
+        instance.save()
+        return instance
 
     def validate_profile_image(self, value):
         if value:
