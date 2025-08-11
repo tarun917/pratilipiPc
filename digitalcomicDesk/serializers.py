@@ -12,7 +12,10 @@ class ComicSerializer(serializers.ModelSerializer):
 class EpisodeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EpisodeModel
-        fields = ['id', 'comic', 'episode_number', 'thumbnail', 'content_url', 'is_free', 'coin_cost', 'is_locked']
+        fields = [
+            'id', 'comic', 'episode_number', 'thumbnail',
+            'content_url', 'content_file', 'is_free', 'coin_cost', 'is_locked'
+        ]
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:

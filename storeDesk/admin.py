@@ -41,10 +41,8 @@ class ComicAdmin(admin.ModelAdmin):
     preview_file_link.short_description = 'Preview File'
 
     def get_fields(self, request, obj=None):
-        fields = super().get_fields(request, obj)
-        if obj:
-            fields = ('title', 'cover_image', 'preview_image', 'price', 'discount_price', 'description', 'pages', 'genres', 'stock_quantity', 'preview_file', 'preview_file_link', 'rating', 'rating_count', 'buyer_count', 'created_at')
-        return fields
+        # Only include model fields, not custom methods
+        return super().get_fields(request, obj)
 
     def low_stock_alert(self, obj):
         return obj.stock_quantity < 10

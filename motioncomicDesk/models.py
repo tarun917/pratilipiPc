@@ -18,7 +18,11 @@ class EpisodeModel(models.Model):
     comic = models.ForeignKey(ComicModel, on_delete=models.CASCADE)
     episode_number = models.PositiveIntegerField()
     thumbnail = models.ImageField(upload_to='motioncomics/episodes/', null=True, blank=True)
-    video_url = models.URLField()
+    video_url = models.URLField(blank=True, null=True)  # Now optional
+    video_file = models.FileField(
+        upload_to='motioncomics/episodes/', blank=True, null=True,
+        help_text="Upload MP4 video for this episode (optional)"
+    )
     is_free = models.BooleanField(default=False)
     coin_cost = models.IntegerField(default=50)
     is_locked = models.BooleanField(default=True)

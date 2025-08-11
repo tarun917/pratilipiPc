@@ -33,11 +33,22 @@ class MotionComicViewSet(viewsets.ModelViewSet):
     def unlock(self, request, pk=None):
         comic = self.get_object()
         user = request.user
-        if user.coin_count >= 50 or user.subscriptionmodel_set.exists():
-            episode = EpisodeModel.objects.filter(comic=comic, is_locked=True).first()
+        episode_id = request.data.get('episode_id')
+        is_premium = user.subscriptionmodel_set.exists()
+        if is_premium:
+            # Premium: unlock all episodes for this comic
+            EpisodeModel.objects.filter(comic=comic).update(is_locked=False)
+            return Response({"message": "All episodes unlocked (premium)"}, status=status.HTTP_200_OK)
+        if user.coin_count >= 50:
+            if episode_id:
+                episode = EpisodeModel.objects.filter(id=episode_id, comic=comic, is_locked=True).first()
+            else:
+                episode = EpisodeModel.objects.filter(comic=comic, is_locked=True).first()
             if episode:
                 episode.is_locked = False
                 episode.save()
+                user.coin_count -= 50
+                user.save()
                 return Response({"message": "Episode unlocked"}, status=status.HTTP_200_OK)
             return Response({"error": "No locked episodes found"}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"error": "Insufficient coins or no subscription"}, status=status.HTTP_400_BAD_REQUEST)
