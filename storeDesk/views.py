@@ -101,6 +101,19 @@ class ComicViewSet(viewsets.ModelViewSet):
         link = f"{base_url}/api/store/comics/{comic.id}/"
         return Response({"share_link": link}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'], url_path='reviews')
+    def reviews(self, request, pk=None):
+        """
+        Returns paginated reviews for a specific comic.
+        URL: /api/store/comics/<comic_id>/reviews/
+        """
+        comic = get_object_or_404(Comic, pk=pk)
+        queryset = Review.objects.filter(comic=comic).order_by('-created_at')
+        paginator = StorePagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = ReviewSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer

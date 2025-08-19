@@ -12,7 +12,7 @@ SECRET_KEY = config('SECRET_KEY')  # Secure key from environment
 # Security settings
 DEBUG = True  # Enable debug mode for development (disable in production)
 ALLOWED_HOSTS = ['*']  # Allow all for testing (restrict in production to your IPs like '192.168.1.4', '10.0.2.2')
-INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.9', '10.184.78.84', '10.82.85.84']  # Add laptop IP for debug toolbar
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.9', '10.184.78.84', '10.82.85.84', '10.141.43.117', '10.141.43.84']  # Add laptop IP for debug toolbar
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',  # Admin interface
@@ -39,10 +39,10 @@ INSTALLED_APPS = [
     'carouselDesk',  # Custom app for carousel features
     'creatorDesk',  # Custom app for creator features
     'debug_toolbar',  # Debug toolbar for development
-    
+    'paymentsDesk',  # Custom app for payment features
+
 ]
 
-AUTH_USER_MODEL = 'profileDesk.User'
 
 MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',  # Debug toolbar middleware for development
@@ -155,7 +155,6 @@ REST_FRAMEWORK = {
     },
     'UNAUTHENTICATED_USER': None,
     'UNAUTHENTICATED_TOKEN': None,
-    'UNAUTHENTICATED_VIEWS': ('profileDesk.views.logout_view',),
 }
 
 # Simple JWT configuration
@@ -165,6 +164,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,  # Enable blacklisting after token rotation
+    'LEEWAY': 60,
 }
 
 # Logging configuration
@@ -209,6 +209,13 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
+# Razorpay credentials (keep secret)
+# ...existing code...
+
+RAZORPAY_KEY_ID = config("RAZORPAY_KEY_ID")        # Use config instead of env
+RAZORPAY_KEY_SECRET = config("RAZORPAY_KEY_SECRET")
+
+# ...existing code...
 
 TIME_ZONE = 'Asia/Kolkata'  # Yeh IST ke liye sahi hai
 USE_TZ = True

@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/motioncomic/', include('motioncomicDesk.urls')),  # Include motioncomicDesk URLs under /api/motioncomic/
     path('api/favourite/', include('favouriteDesk.urls')),  # This line should be present
     path('api/creator/', include('creatorDesk.urls')),  # Include creatorDesk URLs under /api/creator/
+    path('api/payments/razorpay/', include('paymentsDesk.urls')),  # Include paymentsDesk URLs under /api/payments/razorpay/
 ]
 
 if settings.DEBUG:

@@ -16,4 +16,5 @@ router.register(r'notifications', NotificationViewSet, basename='user_notificati
 
 urlpatterns = router.urls + [
     path('comics/<int:pk>/share-link/', ComicViewSet.as_view({'get': 'share_link'}), name='comic-share-link'),
+    path('comics/<int:pk>/reviews/', ComicViewSet.as_view({'get': 'reviews'}), name='comic-reviews'),  # Add this line
 ]
