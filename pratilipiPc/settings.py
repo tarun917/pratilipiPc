@@ -12,7 +12,7 @@ SECRET_KEY = config('SECRET_KEY')  # Secure key from environment
 # Security settings
 DEBUG = True  # Enable debug mode for development (disable in production)
 ALLOWED_HOSTS = ['*']  # Allow all for testing (restrict in production to your IPs like '192.168.1.4', '10.0.2.2')
-INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.9', '10.184.78.84', '10.82.85.84', '10.141.43.117', '10.141.43.84']  # Add laptop IP for debug toolbar
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.9', '10.184.78.84', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.10.1.242']  # Add laptop IP for debug toolbar
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',  # Admin interface
@@ -146,12 +146,12 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.ScopedRateThrottle',
     ),
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
-        'review': '50/day',  # Limit reviews per user
-        'wishlist': '100/day',  # Limit wishlist actions
-        'order': '50/day',  # Limit orders per user
-        'submission': '10/day',  # Limit submissions per user
+        'anon': '1000/day',
+        'user': '10000/day',
+        'review': '500/day',  # Limit reviews per user
+        'wishlist': '1000/day',  # Limit wishlist actions
+        'order': '500/day',  # Limit orders per user
+        'submission': '100/day',  # Limit submissions per user
     },
     'UNAUTHENTICATED_USER': None,
     'UNAUTHENTICATED_TOKEN': None,

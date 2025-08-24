@@ -1,8 +1,10 @@
+from decimal import Decimal
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 import re
-from .models import Genre, Comic, Order, Review, Wishlist, Promotion, NotificationPreference, RestockNotification
+from .models import Genre, Comic, Order, Review, Wishlist, Promotion, PromotionRedemption
 from profileDesk.models import CustomUser
+
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,13 +19,16 @@ class GenreSerializer(serializers.ModelSerializer):
             raise ValidationError("Genre name must not exceed 100 characters.")
         return value
 
+
 class ComicSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
     genres = GenreSerializer(many=True, read_only=True)
 
     class Meta:
         model = Comic
-        fields = ['id', 'title', 'cover_image', 'price', 'discount_price', 'description', 'pages', 'rating', 'rating_count', 'buyer_count', 'stock_quantity', 'preview_file', 'genres', 'created_at', 'user']
+        fields = ['id', 'title', 'cover_image', 'price', 'discount_price', 'description', 'pages',
+                  'rating', 'rating_count', 'buyer_count', 'stock_quantity', 'preview_file',
+                  'genres', 'created_at', 'user']
         read_only_fields = ['id', 'rating', 'rating_count', 'buyer_count', 'created_at']
 
     def validate_title(self, value):
@@ -39,7 +44,9 @@ class ComicSerializer(serializers.ModelSerializer):
         return value
 
     def validate_discount_price(self, value):
-        if value and value >= self.initial_data.get('price', float('inf')):
+        price_raw = self.initial_data.get('price')
+        price = Decimal(str(price_raw)) if price_raw is not None else None
+        if value and price and value >= price:
             raise ValidationError("Discount price must be less than regular price.")
         return value
 
@@ -75,13 +82,17 @@ class ComicSerializer(serializers.ModelSerializer):
             raise ValidationError("Only JPG, JPEG, PNG, GIF, and PDF formats are allowed.")
         return value
 
+
 class OrderSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
+    # Accept promo_code from client; discount fields read-only (server computed)
+    promo_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'comic', 'purchase_date', 'buyer_name', 'email', 'mobile', 'address', 'pin_code']
-        read_only_fields = ['id', 'purchase_date']
+        fields = ['id', 'user', 'comic', 'purchase_date', 'buyer_name', 'email', 'mobile',
+                  'address', 'pin_code', 'promo_code', 'discount_applied', 'final_price']
+        read_only_fields = ['id', 'purchase_date', 'discount_applied', 'final_price']
 
     def validate_buyer_name(self, value):
         if not value.strip():
@@ -96,8 +107,9 @@ class OrderSerializer(serializers.ModelSerializer):
         return value
 
     def validate_mobile(self, value):
-        if not re.match(r'^\+[1-9]\d{1,14}$', value):
-            raise ValidationError("Invalid mobile number format (e.g., +919406702569).")
+        # Allow +91... etc
+        if not re.match(r'^\+?[0-9]{7,15}$', value):
+            raise ValidationError("Invalid mobile number format.")
         return value
 
     def validate_pin_code(self, value):
@@ -106,9 +118,11 @@ class OrderSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        if data['comic'].stock_quantity <= 0:
+        comic = data['comic']
+        if comic.stock_quantity <= 0:
             raise ValidationError("Comic is out of stock.")
         return data
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
@@ -131,15 +145,15 @@ class ReviewSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        # Get user from request context instead of data
         user = self.context['request'].user if 'request' in self.context else None
         if not user or not Order.objects.filter(user=user, comic=data['comic']).exists():
             raise ValidationError("You can only review a comic you have purchased.")
         return data
 
+
 class WishlistSerializer(serializers.ModelSerializer):
-    # [CHANGE START] Modify user field to handle it via context
-    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False, default=serializers.CurrentUserDefault())
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False,
+                                              default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Wishlist
@@ -148,37 +162,37 @@ class WishlistSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['user'].required = False  # Explicitly make user optional
-    # [CHANGE END]
+        self.fields['user'].required = False
+
 
 class PromotionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Promotion
-        fields = ['id', 'title', 'genre', 'discount_percentage', 'start_date', 'end_date']
-        read_only_fields = ['id']
+        fields = [
+            'id', 'title', 'code', 'discount_type', 'discount_value', 'terms',
+            'genre', 'comic', 'max_uses', 'per_user_limit', 'min_order_amount',
+            'used_count', 'start_date', 'end_date'
+        ]
+        read_only_fields = ['id', 'used_count']
 
-    def validate_discount_percentage(self, value):
-        if value < 0 or value > 100:
-            raise ValidationError("Discount percentage must be between 0 and 100.")
-        return value
+    def validate_code(self, value):
+        if value in (None, ''):
+            return None
+        v = value.strip().upper()
+        if not re.match(r'^[A-Z0-9_-]{3,32}$', v):
+            raise ValidationError("Code must be 3-32 chars, uppercase letters, digits, _ or -.")
+        return v
 
     def validate(self, data):
         if data['start_date'] >= data['end_date']:
             raise ValidationError("Start date must be before end date.")
+        if data['discount_type'] == 'percentage':
+            if data['discount_value'] < 0 or data['discount_value'] > 100:
+                raise ValidationError("Percentage must be between 0 and 100.")
+        else:
+            if data['discount_value'] < 0:
+                raise ValidationError("Fixed discount must be >= 0.")
         return data
 
-class NotificationPreferenceSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
 
-    class Meta:
-        model = NotificationPreference
-        fields = ['id', 'user', 'promotion_notifications']
-        read_only_fields = ['id']
-
-class RestockNotificationSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
-
-    class Meta:
-        model = RestockNotification
-        fields = ['id', 'user', 'comic', 'requested_at', 'notified']
-        read_only_fields = ['id', 'requested_at', 'notified']
+# NotificationPreference and RestockNotification serializers removed: corresponding models do not exist in storeDesk.models

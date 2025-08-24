@@ -1,6 +1,8 @@
 from .models import CustomUser
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from communityDesk.models import Follow
+
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,11 +35,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             raise ValidationError("About section must not exceed 256 words.")
         return value
 
-    def update(self, instance, validated_data):
-        instance.profile_image = validated_data.get('profile_image', instance.profile_image)
-        instance.about = validated_data.get('about', instance.about)
-        instance.save()
-        return instance
 
 class ProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,17 +42,18 @@ class ProfileImageSerializer(serializers.ModelSerializer):
         fields = ['profile_image']
 
     def validate_profile_image(self, value):
-        if value.size > 5 * 1024 * 1024:
-            raise ValidationError("Image size must not exceed 5MB.")
-        if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
-            raise ValidationError("Only JPG, JPEG, and PNG formats are allowed.")
+        if value:
+            if value.size > 5 * 1024 * 1024:
+                raise ValidationError("Image size must not exceed 5MB.")
+            if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                raise ValidationError("Only JPG, JPEG, and PNG formats are allowed.")
         return value
 
     def update(self, instance, validated_data):
         instance.profile_image = validated_data.get('profile_image', instance.profile_image)
         instance.save()
         return instance
-    
+
 
 # New: Serializer for public user details (limited fields)
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -69,18 +67,25 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 # profileDesk/short_serializers.py
 
-from rest_framework import serializers
-from .models import CustomUser
-
 class ShortUserSerializer(serializers.ModelSerializer):
+    my_follow_id = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'profile_image', 'badge']
+        fields = ['id', 'username', 'profile_image', 'badge', 'my_follow_id']
         extra_kwargs = {
             'profile_image': {'read_only': True},
         }
         read_only_fields = ['id', 'username', 'profile_image', 'badge']
 
+    def get_my_follow_id(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            if request.user.id == obj.id:
+                return None
+            rel = Follow.objects.filter(follower=request.user, following=obj).values('id').first()
+            return rel['id'] if rel else None
+        return None
 
 
 class SearchUserSerializer(serializers.ModelSerializer):
@@ -93,9 +98,7 @@ class SearchUserSerializer(serializers.ModelSerializer):
     def get_is_following(self, obj):
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user.is_authenticated:
-            # User cannot follow themselves
             if request.user == obj:
                 return False
-            from communityDesk.models import Follow
             return Follow.objects.filter(follower=request.user, following=obj).exists()
         return False

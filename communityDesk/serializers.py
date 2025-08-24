@@ -1,3 +1,4 @@
+# communityDesk/serializers.py
 import json
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
@@ -7,8 +8,8 @@ from profileDesk.serializers import ShortUserSerializer
 from .models import Post, Comment, Poll, Vote, Follow, Like
 from profileDesk.models import CustomUser
 
-class PostSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False) # Allow user to be set automatically
+
+class PostSerializer(serializers.ModelSerializer):  # Allow user to be set automatically
     user = ShortUserSerializer(read_only=True)
     like_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
@@ -35,7 +36,7 @@ class PostSerializer(serializers.ModelSerializer):
             hashtags = [tag for tag in value.strip().split() if tag]
         else:
             hashtags = value
-        if not all(isinstance(tag, str) and re.match(r'^#\w+$', tag) for tag in hashtags):
+        if not all(isinstance(tag, str) and re.match(r'^#\\w+$', tag) for tag in hashtags):
             raise ValidationError("Hashtags must start with # and contain only letters, numbers, or underscores.")
         return hashtags
 
@@ -75,7 +76,6 @@ class PostSerializer(serializers.ModelSerializer):
         return value
 
 
-
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)  # Allow user to be set automatically
     post = serializers.PrimaryKeyRelatedField(queryset=Post.objects.all(), required=False)  # Allow post to be set automatically
@@ -91,6 +91,7 @@ class CommentSerializer(serializers.ModelSerializer):
         if len(value) > 256:
             raise ValidationError("Text must not exceed 256 characters.")
         return value
+
 
 class PollSerializer(serializers.ModelSerializer):
     post = serializers.PrimaryKeyRelatedField(queryset=Post.objects.all(), required=False)  # Allow post to be set automatically
@@ -109,8 +110,9 @@ class PollSerializer(serializers.ModelSerializer):
             raise ValidationError("Votes keys must match options keys.")
         return data
 
+
 class VoteSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)  # Allow user to be set automatically)  
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)  # Allow user to be set automatically
     poll = serializers.PrimaryKeyRelatedField(queryset=Poll.objects.all(), required=False)  # Allow poll to be set automatically
 
     class Meta:
@@ -133,6 +135,7 @@ class VoteSerializer(serializers.ModelSerializer):
             raise ValidationError("You have already voted in this poll.")
         return data
 
+
 class FollowSerializer(serializers.ModelSerializer):
     follower = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     following = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
@@ -147,6 +150,7 @@ class FollowSerializer(serializers.ModelSerializer):
         if Follow.objects.filter(follower=data['follower'], following=data['following']).exists():
             raise ValidationError("You are already following this user.")
         return data
+
 
 class LikeSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)  # Allow user to be set automatically
