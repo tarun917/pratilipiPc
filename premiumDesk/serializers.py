@@ -1,14 +1,18 @@
-# premiumDesk/serializers.py
-from rest_framework import serializers
-from .models import SubscriptionModel
-from django.utils import timezone
 from datetime import timedelta
 
+from django.utils import timezone
+from rest_framework import serializers
+
+from .models import SubscriptionModel, WalletLedger
+
+
+# Server-authoritative subscription catalog
 PLAN_PRICING = {
     '3_month': {'months': 3,  'price': 349.00, 'benefits': 'Full access, no ads'},
     '6_month': {'months': 6,  'price': 499.00, 'benefits': 'Full access, no ads'},
-    '12_month': {'months': 12, 'price': 799.00, 'benefits': 'Full access, no ads'},  # adjust price
+    '12_month': {'months': 12, 'price': 799.00, 'benefits': 'Full access, no ads'},  # adjust price if needed
 }
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,7 +36,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('You already have an active subscription')
 
         start = now
-        # naive month-add: use 30 days per month or use dateutil.relativedelta if available
+        # naive month-add: 30 days per month
         end = start + timedelta(days=30 * conf['months'])
 
         return SubscriptionModel.objects.create(
@@ -43,3 +47,28 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             start_date=start,
             end_date=end,
         )
+
+
+class WalletLedgerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WalletLedger
+        fields = [
+            'id', 'user', 'delta', 'balance_after', 'reason',
+            'link_model', 'link_id', 'idempotency_key', 'created_at'
+        ]
+        read_only_fields = ['id', 'user', 'delta', 'balance_after', 'created_at']
+
+    # Note: writes to WalletLedger are performed by views/services to ensure
+    # atomic updates together with CustomUser.coin_count. This serializer is read-only.
+
+
+class CoinsConsumeSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(min_value=1)
+    reason = serializers.ChoiceField(choices=[c[0] for c in WalletLedger.REASON_CHOICES], default='other')
+    idempotency_key = serializers.CharField(max_length=64)
+    link_model = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+    link_id = serializers.CharField(max_length=64, required=False, allow_blank=True, allow_null=True)
+
+    def validate(self, attrs):
+        # Additional guardrails can be added here if needed (e.g., disallow certain reasons)
+        return attrs

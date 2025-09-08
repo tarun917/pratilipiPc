@@ -1,14 +1,26 @@
 from django.shortcuts import get_object_or_404
+from django.db import transaction
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import ComicModel, EpisodeModel, CommentModel, UserEpisodeUnlock
+from .models import ComicModel, EpisodeModel, CommentModel, EpisodeAccess
 from .serializers import ComicSerializer, EpisodeSerializer, CommentSerializer
 
 
 class MotionComicViewSet(viewsets.ModelViewSet):
+    """
+    Routes:
+    - GET /api/motioncomic/motioncomic/?genre=
+    - GET /api/motioncomic/motioncomic/{comic_id}/details/
+    - POST /api/motioncomic/motioncomic/{comic_id}/unlock/   body: { episode_id }
+      Response:
+        200 -> { unlocked: true, source: "PREMIUM" | "ALREADY", balance? }
+        201 -> { unlocked: true, source: "COINS", balance }
+        400 -> { error, code?: "insufficient_balance" }
+    - Additional actions: rate, view, like, comment, commentlike, share, favourite, create_episode
+    """
     queryset = ComicModel.objects.all()
     serializer_class = ComicSerializer
     permission_classes = [IsAuthenticated]
@@ -30,53 +42,83 @@ class MotionComicViewSet(viewsets.ModelViewSet):
             'episodes': EpisodeSerializer(episodes, many=True, context={'request': request}).data
         })
 
+    def _is_user_premium(self, user) -> bool:
+        # Replace with premiumDesk integration if available
+        if not user or not getattr(user, 'is_authenticated', False):
+            return False
+        if getattr(user, 'is_premium', False):
+            return True
+        if hasattr(user, 'subscriptionmodel_set'):
+            try:
+                return user.subscriptionmodel_set.exists()
+            except Exception:
+                return False
+        return False
+
     @action(detail=True, methods=['post'])
     def unlock(self, request, pk=None):
         """
-        Per-user unlock logic:
-        - If user is premium -> create unlock records for all episodes (for this user only)
-        - Else:
-          - Deduct coins (episode.coin_cost, default 50)
-          - Create a UserEpisodeUnlock for the requested episode
+        Per-user unlock logic (parity with digital):
+        - If EpisodeAccess exists -> ALREADY (no charge)
+        - If episode is globally unlocked (admin) -> ALREADY (safety guard; no charge)
+        - If user is premium or episode is free -> PREMIUM grant for this episode (no charge)
+        - Else coins path: check balance, deduct once, create EpisodeAccess
         """
         comic = self.get_object()
         user = request.user
         episode_id = request.data.get('episode_id')
 
-        # Premium: unlock all episodes for this user
-        if hasattr(user, 'subscriptionmodel_set') and user.subscriptionmodel_set.exists():
-            episodes = EpisodeModel.objects.filter(comic=comic)
-            created_count = 0
-            for ep in episodes:
-                _, created = UserEpisodeUnlock.objects.get_or_create(user=user, episode=ep)
-                if created:
-                    created_count += 1
-            return Response({"message": "All episodes unlocked (premium)", "created": created_count}, status=status.HTTP_200_OK)
-
-        # Non-premium path: need episode
+        # Validate episode
         if episode_id:
             episode = EpisodeModel.objects.filter(id=episode_id, comic=comic).first()
         else:
-            episode = EpisodeModel.objects.filter(comic=comic).order_by('episode_number').first()
+            episode = None
 
         if not episode:
-            return Response({"error": "No episodes found for this comic"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Valid episode_id required for this comic"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Already unlocked?
-        if UserEpisodeUnlock.objects.filter(user=user, episode=episode).exists():
-            return Response({"message": "Already unlocked", "episode_id": episode.id}, status=status.HTTP_200_OK)
+        # Idempotency: already unlocked for this user
+        if EpisodeAccess.objects.filter(user=user, episode=episode).exists():
+            return Response({"unlocked": True, "source": "ALREADY", "episode_id": episode.id}, status=status.HTTP_200_OK)
 
-        # Check coin balance
+        # Safety guard: admin globally unlocked -> do not charge, mark as ALREADY
+        if not episode.is_locked:
+            EpisodeAccess.objects.get_or_create(user=user, episode=episode, defaults={'source': EpisodeAccess.SOURCE_PREMIUM})
+            return Response({"unlocked": True, "source": "ALREADY", "episode_id": episode.id}, status=status.HTTP_200_OK)
+
+        # Premium or Free episode -> grant without coins
+        if episode.is_free or self._is_user_premium(user):
+            EpisodeAccess.objects.get_or_create(
+                user=user, episode=episode,
+                defaults={'source': EpisodeAccess.SOURCE_PREMIUM}
+            )
+            return Response({"unlocked": True, "source": "PREMIUM", "episode_id": episode.id}, status=status.HTTP_200_OK)
+
+        # Coins path
         cost = episode.coin_cost or 50
-        if getattr(user, 'coin_count', 0) < cost:
-            return Response({"error": "Insufficient coins", "required": cost, "balance": getattr(user, 'coin_count', 0)}, status=status.HTTP_400_BAD_REQUEST)
+        balance = getattr(user, 'coin_count', 0)
+        if balance < cost:
+            return Response(
+                {"error": "Insufficient coins", "code": "insufficient_balance", "required": cost, "balance": balance},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Deduct and unlock
-        user.coin_count -= cost
-        user.save()
-        UserEpisodeUnlock.objects.create(user=user, episode=episode)
+        # Deduct and grant atomically
+        with transaction.atomic():
+            # Re-check idempotency inside tx
+            if EpisodeAccess.objects.select_for_update().filter(user=user, episode=episode).exists():
+                return Response({"unlocked": True, "source": "ALREADY", "episode_id": episode.id}, status=status.HTTP_200_OK)
 
-        return Response({"message": "Episode unlocked", "episode_id": episode.id, "coin_balance": user.coin_count}, status=status.HTTP_200_OK)
+            # Deduct simple balance (replace with WalletLedger when available)
+            user.coin_count = balance - cost
+            user.save(update_fields=['coin_count'])
+
+            EpisodeAccess.objects.create(user=user, episode=episode, source=EpisodeAccess.SOURCE_COINS)
+
+        return Response(
+            {"unlocked": True, "source": "COINS", "episode_id": episode.id, "balance": user.coin_count},
+            status=status.HTTP_201_CREATED
+        )
 
     @action(detail=True, methods=['post'])
     def rate(self, request, pk=None):
@@ -87,24 +129,25 @@ class MotionComicViewSet(viewsets.ModelViewSet):
         except (TypeError, ValueError):
             return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
         if 1 <= rating <= 5:
+            # Weighted average
             comic.rating = ((comic.rating * comic.rating_count) + rating) / (comic.rating_count + 1)
             comic.rating_count += 1
-            comic.save()
-            return Response({"rating": comic.rating}, status=status.HTTP_200_OK)
+            comic.save(update_fields=['rating', 'rating_count'])
+            return Response({"rating": float(comic.rating)}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
         comic = self.get_object()
         comic.view_count += 1
-        comic.save()
+        comic.save(update_fields=['view_count'])
         return Response({"view_count": comic.view_count}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
         comic = self.get_object()
         comic.favourite_count += 1
-        comic.save()
+        comic.save(update_fields=['favourite_count'])
         return Response({"favourite_count": comic.favourite_count}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
@@ -125,15 +168,15 @@ class MotionComicViewSet(viewsets.ModelViewSet):
         if comment_id:
             comment = get_object_or_404(CommentModel, id=comment_id, episode__comic=comic)
             comment.likes_count += 1
-            comment.save()
+            comment.save(update_fields=['likes_count'])
             return Response({"likes_count": comment.likes_count}, status=status.HTTP_200_OK)
         return Response({"error": "Comment ID required"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def share(self, request, pk=None):
         comic = self.get_object()
-        comic.favourite_count += 1  # Assuming share increases favourite count
-        comic.save()
+        comic.favourite_count += 1  # simple placeholder metric
+        comic.save(update_fields=['favourite_count'])
         return Response({"favourite_count": comic.favourite_count}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
@@ -153,7 +196,8 @@ class MotionComicViewSet(viewsets.ModelViewSet):
 
 class EpisodeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """
-    GET /api/motioncomic/episode/{id}/  -> single episode with per-user lock, prev/next, playback_url
+    GET /api/motioncomic/motioncomic/episode/{id}/
+    Returns single episode with per-user lock, prev/next, playback_url.
     """
     queryset = EpisodeModel.objects.all()
     serializer_class = EpisodeSerializer

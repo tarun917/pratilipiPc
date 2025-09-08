@@ -1,4 +1,4 @@
-from .models import CustomUser
+from .models import CustomUser, Address
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from communityDesk.models import Follow
@@ -12,6 +12,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'coin_count': {'read_only': True},
             'email': {'required': False},
             'mobile_number': {'required': False},
+            'date_joined': {'read_only': True},
         }
 
     def update(self, instance, validated_data):
@@ -55,17 +56,48 @@ class ProfileImageSerializer(serializers.ModelSerializer):
         return instance
 
 
-# New: Serializer for public user details (limited fields)
+# Public user details (limited fields)
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'full_name', 'profile_image', 'badge']  # Public fields only
+        fields = ['id', 'username', 'full_name', 'profile_image', 'badge']
         extra_kwargs = {
             'profile_image': {'read_only': True},
         }
 
 
-# profileDesk/short_serializers.py
+# Address serializers (owner-scoped usage via context['request'])
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            'id', 'name', 'mobile_number', 'line1', 'line2', 'landmark',
+            'city', 'state', 'pincode', 'country', 'address_type',
+            'is_default', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        # Attach current user; viewset must pass context={'request': request}
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            raise ValidationError("Authentication required.")
+        validated_data['user'] = request.user
+        return super().create(validated_data)
+
+    def validate_mobile_number(self, value):
+        # Basic guard; extend with regex per region if needed
+        if value and len(value) > 15:
+            raise ValidationError("Invalid mobile number.")
+        return value
+
+    def validate_pincode(self, value):
+        if value and len(value) > 20:
+            raise ValidationError("Invalid pincode.")
+        return value
+
+
+# profileDesk/short_serializers.py (kept here for convenience)
 
 class ShortUserSerializer(serializers.ModelSerializer):
     my_follow_id = serializers.SerializerMethodField()

@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Upload Slices ZIP | {{ title }}{% endblock %}
+
+{% block content %}
+<div class="app-digitalcomic-upload" style="max-width: 720px;">
+  <h1>Upload Slices ZIP for Episode #{{ episode.episode_number }}</h1>
+  <p>
+    Comic: <strong>{{ episode.comic.title }}</strong><br>
+    Episode ID: <code>{{ episode.id }}</code>
+  </p>
+
+  <div class="help" style="margin: 12px 0; background: #f6f7f9; padding: 12px; border: 1px solid #e3e4e6;">
+    <ul style="margin: 0 0 0 18px;">
+      <li>ZIP root me sirf JPG/JPEG slices hon (e.g., 0001.jpg, 0002.jpg ...).</li>
+      <li>Import atomic hai: pehle ke saare slices delete honge, phir naye create.</li>
+      <li>Files storage via Django Storage hoti hai (S3/local automatically).</li>
+    </ul>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <fieldset class="module aligned">
+      {{ form.as_p }}
+    </fieldset>
+    <div class="submit-row">
+      <input type="submit" value="Upload & Replace All" class="default" />
+      <a href="{% url 'admin:digitalcomicDesk_episodemodel_change' episode.pk %}" class="deletelink" style="margin-left: 8px;">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

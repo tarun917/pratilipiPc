@@ -1,14 +1,19 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import CustomUser
-from .serializers import CustomUserSerializer, ProfileUpdateSerializer, ProfileImageSerializer
+
+from .models import CustomUser, Address
+from .serializers import (
+    CustomUserSerializer,
+    ProfileUpdateSerializer,
+    ProfileImageSerializer,
+    AddressSerializer,
+)
 
 
 class ProfileViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
     def list(self, request):
@@ -48,8 +53,23 @@ class ProfileViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Public user details by ID (read-only)
+# Public user details by ID (read-only, limited fields)
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]  # keep as-is; switch to AllowAny if you want truly public
+
+
+class AddressViewSet(viewsets.ModelViewSet):
+    """
+    Owner-scoped address CRUD. Serializer attaches request.user on create.
+    """
+    serializer_class = AddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user).order_by('-is_default', '-updated_at')
+
+    def perform_destroy(self, instance):
+        # Policy: allow delete (even if default). Client can set another default later.
+        instance.delete()
