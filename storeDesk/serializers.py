@@ -270,9 +270,9 @@ class OrderSerializer(serializers.ModelSerializer):
         snapshot = dict(
             address=address_obj,
             ship_name=address_obj.name,
-            ship_mobile=address_obj.mobile,
-            ship_line1=address_obj.address_line1,
-            ship_line2=address_obj.address_line2,
+            ship_mobile=address_obj.mobile_number,   # changed from mobile
+            ship_line1=address_obj.line1,            # changed from address_line1
+            ship_line2=address_obj.line2,            # changed from address_line2
             ship_landmark=address_obj.landmark,
             ship_city=address_obj.city,
             ship_state=address_obj.state,

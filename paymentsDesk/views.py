@@ -419,6 +419,7 @@ class PlayVerifyView(APIView):
             return Response(details, status=400)
 
         coin_map, sub_map = _get_sku_maps()
+        print("DEBUG SUB_PLAN_SKUS keys:", list(sub_map.keys()))
 
         if product_id:
             # Coins flow

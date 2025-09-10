@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 ALLOWED_HOSTS = ['*']
-INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.4', '192.168.1.10', '10.184.78.84', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.10.1.242']
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '192.168.1.6', '192.168.1.11', '192.168.1.10', '10.184.78.84', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.10.1.242']
 
 
 # Feature flags
