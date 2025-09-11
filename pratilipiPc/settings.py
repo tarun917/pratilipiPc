@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Secrets and security
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '139.59.29.54', 'localhost', '106.51.236.218']
 INTERNAL_IPS = ['127.0.0.1', 'localhost', '106.51.236.218', '192.168.1.6', '192.168.1.11', '192.168.1.10', '10.1.2.204', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.10.1.242']
 
 
