@@ -1,108 +1,27 @@
+from .models import CustomUser, Address
 from rest_framework import serializers
-import re
 from django.core.exceptions import ValidationError
+from communityDesk.models import Follow
 
-from .models import CustomUser
-from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.tokens import RefreshToken
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ['username', 'full_name', 'email', 'mobile_number', 'password', 'terms_accepted']
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'email': {'required': True},
-        }
-
-    def validate_username(self, value):
-        if not value.strip():
-            raise serializers.ValidationError("Username cannot be empty.")
-        if CustomUser.objects.filter(username=value).exists():
-            raise serializers.ValidationError("This username is already taken.")
-        if not re.match(r'^[A-Za-z0-9_.-]+$', value):
-            raise serializers.ValidationError("Username can only contain letters, numbers, underscores, dots, or hyphens.")
-        return value
-
-    def validate_full_name(self, value):
-        if not value.strip():
-            raise serializers.ValidationError("Full name cannot be empty.")
-        cleaned_value = re.sub(r'[^A-Za-z\s-]', '', value)
-        if cleaned_value != value:
-            raise serializers.ValidationError("Full name can only contain letters, spaces, or hyphens.")
-        return cleaned_value
-
-    def validate_email(self, value):
-        if CustomUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email is already registered.")
-        return value.lower()
-
-    def validate_mobile_number(self, value):
-        if not value.startswith('+'):
-            value = '+91' + value
-        if not re.match(r'^\+[1-9]\d{1,14}$', value):
-            raise serializers.ValidationError("Invalid mobile number format (e.g., +919406702569).")
-        if CustomUser.objects.filter(mobile_number=value).exists():
-            raise serializers.ValidationError("This mobile number is already registered.")
-        return value
-
-    def validate_terms_accepted(self, value):
-        if not value:
-            raise serializers.ValidationError("You must agree to the terms and conditions.")
-        return value
-
-    def validate_password(self, value):
-        if len(value) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters long.")
-        if not re.search(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$', value):
-            raise serializers.ValidationError("Password must contain at least 8 characters, including letters and numbers.")
-        return value
-
-    def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
-        return super().create(validated_data)
-
-class LoginSerializer(serializers.Serializer):
-    username_or_email = serializers.CharField(required=True)
-    password = serializers.CharField(write_only=True, required=True)
-
-    def validate(self, data):
-        username_or_email = data.get('username_or_email').lower()
-        password = data.get('password')
-
-        user = None
-        if '@' in username_or_email:
-            try:
-                user = CustomUser.objects.get(email=username_or_email)
-            except CustomUser.DoesNotExist:
-                pass
-        else:
-            try:
-                user = CustomUser.objects.get(username=username_or_email)
-            except CustomUser.DoesNotExist:
-                pass
-
-        if user is None or not user.check_password(password):
-            raise serializers.ValidationError("Invalid username/email or password.")
-
-        if not user.is_active:
-            raise serializers.ValidationError("User account is disabled.")
-
-        refresh = RefreshToken.for_user(user)
-        return {
-            'token': str(refresh.access_token),
-            'refresh_token': str(refresh),
-            'userId': user.id,
-            'username': user.username
-        }
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['profile_image', 'about', 'coin_count']
+        fields = ['profile_image', 'about', 'coin_count', 'email', 'mobile_number', 'date_joined']
         extra_kwargs = {
             'coin_count': {'read_only': True},
+            'email': {'required': False},
+            'mobile_number': {'required': False},
+            'date_joined': {'read_only': True},
         }
+
+    def update(self, instance, validated_data):
+        instance.profile_image = validated_data.get('profile_image', instance.profile_image)
+        instance.about = validated_data.get('about', instance.about)
+        instance.email = validated_data.get('email', instance.email)
+        instance.mobile_number = validated_data.get('mobile_number', instance.mobile_number)
+        instance.save()
+        return instance
 
     def validate_profile_image(self, value):
         if value:
@@ -117,11 +36,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             raise ValidationError("About section must not exceed 256 words.")
         return value
 
-    def update(self, instance, validated_data):
-        instance.profile_image = validated_data.get('profile_image', instance.profile_image)
-        instance.about = validated_data.get('about', instance.about)
-        instance.save()
-        return instance
 
 class ProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -129,13 +43,94 @@ class ProfileImageSerializer(serializers.ModelSerializer):
         fields = ['profile_image']
 
     def validate_profile_image(self, value):
-        if value.size > 5 * 1024 * 1024:
-            raise ValidationError("Image size must not exceed 5MB.")
-        if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
-            raise ValidationError("Only JPG, JPEG, and PNG formats are allowed.")
+        if value:
+            if value.size > 5 * 1024 * 1024:
+                raise ValidationError("Image size must not exceed 5MB.")
+            if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
+                raise ValidationError("Only JPG, JPEG, and PNG formats are allowed.")
         return value
 
     def update(self, instance, validated_data):
         instance.profile_image = validated_data.get('profile_image', instance.profile_image)
         instance.save()
         return instance
+
+
+# Public user details (limited fields)
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'full_name', 'profile_image', 'badge']
+        extra_kwargs = {
+            'profile_image': {'read_only': True},
+        }
+
+
+# Address serializers (owner-scoped usage via context['request'])
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = [
+            'id', 'name', 'mobile_number', 'line1', 'line2', 'landmark',
+            'city', 'state', 'pincode', 'country', 'address_type',
+            'is_default', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        # Attach current user; viewset must pass context={'request': request}
+        request = self.context.get('request')
+        if not request or not request.user or not request.user.is_authenticated:
+            raise ValidationError("Authentication required.")
+        validated_data['user'] = request.user
+        return super().create(validated_data)
+
+    def validate_mobile_number(self, value):
+        # Basic guard; extend with regex per region if needed
+        if value and len(value) > 15:
+            raise ValidationError("Invalid mobile number.")
+        return value
+
+    def validate_pincode(self, value):
+        if value and len(value) > 20:
+            raise ValidationError("Invalid pincode.")
+        return value
+
+
+# profileDesk/short_serializers.py (kept here for convenience)
+
+class ShortUserSerializer(serializers.ModelSerializer):
+    my_follow_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'profile_image', 'badge', 'my_follow_id']
+        extra_kwargs = {
+            'profile_image': {'read_only': True},
+        }
+        read_only_fields = ['id', 'username', 'profile_image', 'badge']
+
+    def get_my_follow_id(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            if request.user.id == obj.id:
+                return None
+            rel = Follow.objects.filter(follower=request.user, following=obj).values('id').first()
+            return rel['id'] if rel else None
+        return None
+
+
+class SearchUserSerializer(serializers.ModelSerializer):
+    is_following = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'full_name', 'profile_image', 'badge', 'is_following']
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            if request.user == obj:
+                return False
+            return Follow.objects.filter(follower=request.user, following=obj).exists()
+        return False

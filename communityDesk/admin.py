@@ -1,6 +1,5 @@
 from django.contrib import admin
 from .models import Post, Comment, Poll, Vote, Follow, Like
-from django.contrib.auth.admin import UserAdmin
 
 # Custom Admin Classes
 class PostAdmin(admin.ModelAdmin):
@@ -10,10 +9,10 @@ class PostAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'user', 'text', 'created_at', 'updated_at', 'share_count', 'commenting_enabled', 'hashtags')
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'post', 'user', 'text', 'created_at')
+    list_display = ('id', 'post', 'user', 'parent', 'text', 'created_at')
     search_fields = ('text', 'user__username', 'post__id')
     list_filter = ('created_at', 'user')
-    readonly_fields = ('id', 'post', 'user', 'text', 'created_at')
+    readonly_fields = ('id', 'post', 'user', 'parent', 'text', 'created_at')
 
 class PollAdmin(admin.ModelAdmin):
     list_display = ('id', 'post', 'question', 'created_at')

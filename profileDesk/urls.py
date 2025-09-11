@@ -1,18 +1,20 @@
 from django.urls import path, include
-from .views import AuthViewSet, ProfileViewSet, logout_view
+from rest_framework.routers import DefaultRouter
 
-auth_patterns = [
-    path('signup/', AuthViewSet.as_view({'post': 'register'}), name='auth-signup'),
-    path('login/', AuthViewSet.as_view({'post': 'login'}), name='auth-login'),
-    path('logout/', logout_view, name='auth-logout'),
-]
+from .views import ProfileViewSet, UserViewSet, AddressViewSet
+
+# Router for read-only public users (currently behind IsAuthenticated in views)
+router_users = DefaultRouter()
+router_users.register(r'users', UserViewSet, basename='user')  # /users/
+
+# Nested router for profile-specific resources
+router_profile = DefaultRouter()
+router_profile.register(r'addresses', AddressViewSet, basename='profile-address')  # /profile/addresses/
 
 profile_patterns = [
     path('profile/picture/', ProfileViewSet.as_view({'post': 'upload_image'}), name='profile-picture'),
     path('profile/', ProfileViewSet.as_view({'get': 'retrieve', 'patch': 'update'}), name='profile-retrieve-update'),
+    path('profile/', include(router_profile.urls)),
 ]
 
-urlpatterns = [
-    path('auth/', include(auth_patterns)),
-    path('', include(profile_patterns)),
-]
+urlpatterns = profile_patterns + router_users.urls

@@ -1,6 +1,7 @@
 from django.db import models
 from profileDesk.models import CustomUser  # profileDesk se import
 
+
 class Post(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     text = models.TextField(max_length=512)
@@ -14,24 +15,35 @@ class Post(models.Model):
     def __str__(self):
         return f"Post by {self.user.username}"
 
+
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    # Threaded replies: parent is self-FK
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
     text = models.TextField(max_length=256)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['post', 'parent', '-created_at']),
+            models.Index(fields=['post', '-created_at']),
+        ]
+
     def __str__(self):
         return f"Comment by {self.user.username} on {self.post.id}"
+
 
 class Poll(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     question = models.CharField(max_length=255)
     options = models.JSONField(default=dict)  # e.g., {"1": "Option 1", "2": "Option 2"}
-    votes = models.JSONField(default=dict)  # e.g., {"1": 5, "2": 3"}
+    votes = models.JSONField(default=dict)    # e.g., {"1": 5, "2": 3"}
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Poll for Post {self.post.id}"
+
 
 class Vote(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
@@ -45,6 +57,7 @@ class Vote(models.Model):
     def __str__(self):
         return f"Vote by {self.user.username} on {self.poll.id}"
 
+
 class Follow(models.Model):
     follower = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='following')
     following = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='followers')
@@ -52,9 +65,15 @@ class Follow(models.Model):
 
     class Meta:
         unique_together = ('follower', 'following')  # Prevent duplicate follows
+        indexes = [
+            models.Index(fields=['follower', 'following']),
+            models.Index(fields=['following']),
+            models.Index(fields=['follower']),
+        ]
 
     def __str__(self):
         return f"{self.follower.username} follows {self.following.username}"
+
 
 class Like(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
@@ -63,6 +82,10 @@ class Like(models.Model):
 
     class Meta:
         unique_together = ('post', 'user')  # Prevent duplicate likes
+        indexes = [
+            models.Index(fields=['post', 'user']),
+            models.Index(fields=['user']),
+        ]
 
     def __str__(self):
         return f"Like by {self.user.username} on {self.post.id}"
