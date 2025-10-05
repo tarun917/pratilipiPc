@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 ALLOWED_HOSTS = ['*', '139.59.29.54', 'localhost', '106.51.236.218']
-INTERNAL_IPS = ['127.0.0.1', 'localhost', '106.51.236.218', '192.168.1.6', '192.168.1.11', '192.168.1.10', '10.1.2.204', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.10.1.242']
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '106.51.236.218', '192.168.1.3', '192.168.1.10', '192.168.1.9', '10.1.3.8', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.1.2.124']
 
 
 # Feature flags
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'carouselDesk',
     'creatorDesk',
     'paymentsDesk',
+    'readingActivityDesk',
 ]
 
 

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import ComicModel, EpisodeModel, CommentModel, EpisodeAccess
 
 
@@ -49,6 +50,10 @@ class EpisodeSerializer(serializers.ModelSerializer):
         request = self.context.get('request', None)
         user = getattr(request, 'user', None)
 
+        # Optional dev flag: disable all locks for easier testing
+        if getattr(settings, 'DISABLE_MOTION_LOCKS', False):
+            return False
+
         # Anonymous or no user context -> treat as locked
         if not user or not getattr(user, 'is_authenticated', False):
             return True
@@ -65,15 +70,23 @@ class EpisodeSerializer(serializers.ModelSerializer):
         if self._is_user_premium(user):
             return False
 
-        # Per-user access
-        return not EpisodeAccess.objects.filter(user=user, episode=obj).exists()
+        # Per-user access (fail-open if the table is missing or any DB error)
+        try:
+            return not EpisodeAccess.objects.filter(user=user, episode=obj).exists()
+        except Exception:
+            # Table missing or DB error → treat as unlocked in dev
+            return False
 
     def get_prev_episode_id(self, obj: EpisodeModel):
-        prev = EpisodeModel.objects.filter(comic=obj.comic, episode_number=obj.episode_number - 1).only('id').first()
+        prev = EpisodeModel.objects.filter(
+            comic=obj.comic, episode_number=obj.episode_number - 1
+        ).only('id').first()
         return prev.id if prev else None
 
     def get_next_episode_id(self, obj: EpisodeModel):
-        nxt = EpisodeModel.objects.filter(comic=obj.comic, episode_number=obj.episode_number + 1).only('id').first()
+        nxt = EpisodeModel.objects.filter(
+            comic=obj.comic, episode_number=obj.episode_number + 1
+        ).only('id').first()
         return nxt.id if nxt else None
 
     def get_playback_url(self, obj: EpisodeModel):

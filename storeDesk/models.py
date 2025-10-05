@@ -1,7 +1,9 @@
 from decimal import Decimal
 from django.db import models
+from django.forms import ValidationError
 from django.utils import timezone
 from profileDesk.models import CustomUser, Address
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Genre(models.Model):
@@ -28,8 +30,13 @@ class Comic(models.Model):
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     description = models.TextField()
     pages = models.PositiveIntegerField()
-    rating = models.DecimalField(max_digits=3, decimal_places=1, default=Decimal("0.0"))
-    rating_count = models.PositiveIntegerField(default=0)
+    rating = models.DecimalField(
+    max_digits=3,
+    decimal_places=1,
+    default=Decimal("0.0"),
+    validators=[MinValueValidator(Decimal("0.0")), MaxValueValidator(Decimal("5.0"))],
+    help_text="Average rating between 0.0 and 5.0")
+    rating_count = models.PositiveIntegerField(default=0, help_text="Number of ratings contributing to average")
     buyer_count = models.PositiveIntegerField(default=0)
     stock_quantity = models.PositiveIntegerField(default=0)
     preview_file = models.FileField(upload_to="comics/previews/", null=True, blank=True)
@@ -47,6 +54,11 @@ class Comic(models.Model):
 
     def __str__(self):
         return self.title
+    
+    def validate_rating(self, value):
+        if value < Decimal("0.0") or value > Decimal("5.0"):
+            raise ValidationError("Rating must be between 0.0 and 5.0.")
+        return value
 
 
 class Order(models.Model):

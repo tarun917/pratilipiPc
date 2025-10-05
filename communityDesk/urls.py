@@ -9,6 +9,7 @@ from .views import (
     LikeViewSet,
     SearchViewSet,
     UserPostsView,
+    LeaderboardViewSet,  # NEW: leaderboard endpoint
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ router.register(r'polls/(?P<poll_pk>\d+)/votes', VoteViewSet)
 router.register(r'users/(?P<user_pk>\d+)/follow', FollowViewSet, basename='follow')
 router.register(r'posts/(?P<post_pk>\d+)/likes', LikeViewSet)
 router.register(r'search', SearchViewSet, basename='search')
+router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')  # NEW
 
 urlpatterns = router.urls + [
     path('posts/<int:pk>/share/', PostViewSet.as_view({'post': 'share'}), name='post-share'),

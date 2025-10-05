@@ -16,6 +16,8 @@ class EpisodeAdmin(admin.ModelAdmin):
     list_filter = ('comic', 'is_free', 'is_locked')
     search_fields = ('comic__title',)
     ordering = ('comic', 'episode_number')
+    # Quality-of-life in admin:
+    autocomplete_fields = ('comic',)
 
 
 @admin.register(CommentModel)
@@ -24,6 +26,8 @@ class CommentAdmin(admin.ModelAdmin):
     list_select_related = ('episode', 'user')
     search_fields = ('user__username', 'episode__comic__title', 'comment_text')
     ordering = ('-timestamp',)
+    # QoL:
+    autocomplete_fields = ('episode', 'user')
 
 
 @admin.register(EpisodeAccess)
@@ -33,3 +37,5 @@ class EpisodeAccessAdmin(admin.ModelAdmin):
     list_filter = ('source', 'episode__comic')
     search_fields = ('user__username', 'episode__comic__title')
     ordering = ('-unlocked_at',)
+    # QoL:
+    autocomplete_fields = ('user', 'episode')

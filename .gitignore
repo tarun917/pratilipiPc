@@ -9,6 +9,7 @@ __pycache__/
 *.sqlite3
 *.env
 debug.log
+*debug.log
 dump.rdb
 # Media uploads
 media/

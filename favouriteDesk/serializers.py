@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import FavouriteModel
 from digitalcomicDesk.models import ComicModel as DigitalComicModel
-from motioncomicDesk.models import ComicModel as MotionComicModel
+from motioncomicDesk.models import ComicModel as MotionComicModel  # fixed import
 
 
 def canonical_type(t: str | None) -> str | None:
@@ -25,7 +25,7 @@ class FavouriteSerializer(serializers.ModelSerializer):
 
     def _get_comic(self, obj):
         t = canonical_type(obj.comic_type)
-        # IMPORTANT: comic_id may be UUID or string; let ORM coerce
+        # comic_id stored as str; ORM will coerce to UUID/int as needed
         if t == "digital":
             return DigitalComicModel.objects.only("id", "title", "cover_image").filter(id=obj.comic_id).first()
         elif t == "motion":

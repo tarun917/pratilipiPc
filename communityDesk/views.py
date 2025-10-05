@@ -1,26 +1,82 @@
-# views.py
-import json
 import logging
+from django.shortcuts import get_object_or_404
+from django.db.models import Q, Exists, OuterRef, Subquery
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.apps import apps  # for dynamic model lookup
+from django.utils import timezone  # used by streak helper
+
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import ListAPIView
 
 from authDesk import serializers
-from .models import Post, Comment, Poll, Vote, Follow, Like
 from profileDesk.models import CustomUser
-from .serializers import PostSerializer, CommentSerializer, PollSerializer, VoteSerializer, FollowSerializer, LikeSerializer
-from django.shortcuts import get_object_or_404
-from django.db.models import Q, Exists, OuterRef, Subquery
-from rest_framework.pagination import PageNumberPagination
-from django.views.decorators.cache import cache_page
-from django.views.decorators import cache
-from django.utils.decorators import method_decorator
-from rest_framework.generics import ListAPIView
-from profileDesk.serializers import SearchUserSerializer
-
+from .models import Post, Comment, Poll, Vote, Follow, Like
+from .serializers import (
+    PostSerializer,
+    CommentSerializer,
+    PollSerializer,
+    VoteSerializer,
+    FollowSerializer,
+    LikeSerializer,
+    CommunityUserSerializer,  # author/user DTO with my_follow_id + badges
+)
 
 logger = logging.getLogger(__name__)
+
+
+# ================
+# Streak utilities
+# ================
+
+def _get_or_create_engagement(user):
+    """
+    Get/create communityDesk.UserEngagementStats for the user (safe).
+    """
+    try:
+        StatsModel = apps.get_model('communityDesk', 'UserEngagementStats')
+    except LookupError:
+        return None
+    try:
+        obj, _ = StatsModel.objects.get_or_create(user=user)
+        return obj
+    except Exception:
+        return None
+
+
+def _touch_streak_today(user):
+    """
+    Maintain streak_days and last_activity_date for 'daily active ping'.
+    Rules:
+    - If already today -> no change
+    - If yesterday -> streak_days += 1
+    - Else -> streak_days = 1
+    """
+    es = _get_or_create_engagement(user)
+    if es is None:
+        return False, "engagement_stats_unavailable"
+    try:
+        today = timezone.localdate()
+        last = es.last_activity_date
+        if last == today:
+            return True, "already_marked_today"
+        if last is None:
+            es.streak_days = max(1, es.streak_days or 0)
+        else:
+            delta = (today - last).days
+            if delta == 1:
+                es.streak_days = (es.streak_days or 0) + 1
+            else:
+                es.streak_days = 1
+        es.last_activity_date = today
+        es.save(update_fields=["streak_days", "last_activity_date", "updated_at"])
+        return True, "updated"
+    except Exception:
+        return False, "update_failed"
 
 
 class PostPagination(PageNumberPagination):
@@ -30,6 +86,12 @@ class PostPagination(PageNumberPagination):
 
 
 class CommentPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class UserPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
@@ -60,6 +122,13 @@ class PostViewSet(viewsets.ModelViewSet):
             serializer.save(user=self.request.user, image_url=self.request.FILES['image'], hashtags=hashtags)
         else:
             serializer.save(user=self.request.user, hashtags=hashtags)
+
+        # Touch the author's streak today so badges remain fresh in Community as well
+        try:
+            _touch_streak_today(self.request.user)
+        except Exception:
+            logger.warning("Failed to touch streak for user=%s on post create", self.request.user.id, exc_info=True)
+
         logger.info(f"Post created by {self.request.user.username} with hashtags: {hashtags}")
 
     def update(self, request, *args, **kwargs):
@@ -214,31 +283,49 @@ class FollowViewSet(viewsets.ModelViewSet):
     def remove(self, request, user_pk=None):
         # Unfollow target user by URL param, no follow-id needed
         target_user = get_object_or_404(CustomUser, pk=user_pk)
-        deleted, _ = Follow.objects.filter(follower=request.user, following=target_user).delete()
+        deleted, _ = Follow.objects.filter(follower=self.request.user, following=target_user).delete()
         if deleted:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"error": "Not following."}, status=status.HTTP_404_NOT_FOUND)
 
     def follow_status(self, request, user_pk=None):
         target_user = get_object_or_404(CustomUser, pk=user_pk)
-        rel = Follow.objects.filter(follower=request.user, following=target_user).values('id').first()
+        rel = Follow.objects.filter(follower=self.request.user, following=target_user).values('id').first()
         return Response(
             {
-            "is_following": bool(rel),
-            "id": rel['id'] if rel else None
+                "is_following": bool(rel),
+                "id": rel['id'] if rel else None
             },
             status=status.HTTP_200_OK
         )
 
     def followers(self, request, user_pk=None):
+        """
+        GET /api/community/users/{user_pk}/followers/
+        Returns paginated list of users who follow {user_pk}, with my_follow_id relative to request.user
+        """
         target_user = get_object_or_404(CustomUser, pk=user_pk)
-        followers = Follow.objects.filter(following=target_user).values_list('follower__username', flat=True)
-        return Response({"followers": list(followers)}, status=status.HTTP_200_OK)
+        qs = CustomUser.objects.filter(
+            id__in=Follow.objects.filter(following=target_user).values('follower_id')
+        ).order_by('username')
+        paginator = UserPagination()
+        page = paginator.paginate_queryset(qs, request)
+        data = CommunityUserSerializer(page, many=True, context={'request': request}).data
+        return paginator.get_paginated_response(data)
 
     def following(self, request, user_pk=None):
+        """
+        GET /api/community/users/{user_pk}/following/
+        Returns paginated list of users whom {user_pk} follows, with my_follow_id relative to request.user
+        """
         target_user = get_object_or_404(CustomUser, pk=user_pk)
-        following = Follow.objects.filter(follower=target_user).values_list('following__username', flat=True)
-        return Response({"following": list(following)}, status=status.HTTP_200_OK)
+        qs = CustomUser.objects.filter(
+            id__in=Follow.objects.filter(follower=target_user).values('following_id')
+        ).order_by('username')
+        paginator = UserPagination()
+        page = paginator.paginate_queryset(qs, request)
+        data = CommunityUserSerializer(page, many=True, context={'request': request}).data
+        return paginator.get_paginated_response(data)
 
 
 class LikeViewSet(viewsets.ModelViewSet):
@@ -269,7 +356,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@method_decorator(cache_page(60*15), name='list')  # Cache for 15 minutes
+@method_decorator(cache_page(60 * 15), name='list')  # Cache for 15 minutes
 class SearchViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -282,9 +369,10 @@ class SearchViewSet(viewsets.ViewSet):
             Q(username__icontains=query) | Q(full_name__icontains=query)
         )
 
-        # Use proper serializers with context for 'is_liked' and 'is_following'
+        # Use proper serializers with context for 'is_liked' and 'my_follow_id'
         posts_serialized = PostSerializer(posts, many=True, context={'request': request}).data
-        users_serialized = SearchUserSerializer(users, many=True, context={'request': request}).data
+        # Prefer community-aware serializer so UI gets my_follow_id on users
+        users_serialized = CommunityUserSerializer(users, many=True, context={'request': request}).data
 
         return Response({"posts": posts_serialized, "users": users_serialized}, status=status.HTTP_200_OK)
 
@@ -297,3 +385,223 @@ class UserPostsView(ListAPIView):
     def get_queryset(self):
         user_id = self.kwargs.get('user_id')
         return Post.objects.filter(user__id=user_id).order_by('-created_at')
+
+
+# =========================
+# Leaderboard Implementation
+# =========================
+
+class LeaderboardPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+def _leaderboard_score(user: CustomUser):
+    """
+    Hybrid scoring to preserve legacy big totals while uplifting new activity:
+    1) Prefer engagement_stats totals (legacy scale) if present:
+         reader = comic_read_count
+         motion = motion_watch_count
+         streak = streak_days
+    2) Else fallback to EpisodeAccess-derived counts and inferred streak.
+
+    Also compute has_activity from EpisodeAccess (read/watch/streak >= 1),
+    so a new user who just acted gets uplift in zero-score ties even if
+    engagement_stats haven’t updated yet.
+
+    Weights:
+      - Reader: 1.0
+      - Motion: 1.2
+      - Streak: 0.5
+
+    Premium does NOT add score; it is used only as final tie-breaker.
+    Returns (score, reader, motion, streak, is_premium, has_activity)
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+
+    # ---------- Try engagement_stats first ----------
+    reader = 0
+    motion = 0
+    streak = 0
+    used_engagement_stats = False
+
+    StatsModel = None
+    try:
+        # FIX: This model lives in communityDesk
+        StatsModel = apps.get_model('communityDesk', 'UserEngagementStats')
+    except LookupError:
+        StatsModel = None
+
+    stats_obj = None
+    try:
+        if StatsModel is not None:
+            # Common relation name
+            stats_obj = getattr(user, 'engagement_stats', None)
+            if stats_obj is None:
+                stats_obj = StatsModel.objects.filter(user=user).first()
+        else:
+            stats_obj = getattr(user, 'engagement_stats', None)
+    except Exception:
+        stats_obj = None
+
+    if stats_obj is not None:
+        try:
+            reader = int(getattr(stats_obj, 'comic_read_count', 0) or 0)
+            motion = int(getattr(stats_obj, 'motion_watch_count', 0) or 0)
+            streak = int(getattr(stats_obj, 'streak_days', 0) or 0)
+            used_engagement_stats = True
+        except Exception:
+            reader = motion = streak = 0
+            used_engagement_stats = False
+
+    # ---------- Gather EpisodeAccess activity for has_activity AND fallback ----------
+    active_dates = set()
+    ep_reader = 0
+    ep_motion = 0
+
+    # Digital: EpisodeAccess from digitalcomicDesk
+    try:
+        DigitalAccess = apps.get_model('digitalcomicDesk', 'EpisodeAccess')
+    except LookupError:
+        DigitalAccess = None
+
+    if DigitalAccess is not None:
+        try:
+            ep_reader = DigitalAccess.objects.filter(user=user).count()
+            for dt in DigitalAccess.objects.filter(user=user).values_list('unlocked_at', flat=True):
+                if dt:
+                    active_dates.add(dt.astimezone(timezone.get_current_timezone()).date())
+        except Exception:
+            ep_reader = 0
+
+    # Motion: EpisodeAccess from motionDesk
+    try:
+        MotionAccess = apps.get_model('motionDesk', 'EpisodeAccess')
+    except LookupError:
+        MotionAccess = None
+
+    if MotionAccess is not None:
+        try:
+            ep_motion = MotionAccess.objects.filter(user=user).count()
+            for dt in MotionAccess.objects.filter(user=user).values_list('unlocked_at', flat=True):
+                if dt:
+                    active_dates.add(dt.astimezone(timezone.get_current_timezone()).date())
+        except Exception:
+            ep_motion = 0
+
+    # Streak from EpisodeAccess dates (for fallback and has_activity)
+    today = timezone.localdate()
+    ep_streak = 0
+    for i in range(0, 60):  # sane cap
+        d = today - timedelta(days=i)
+        if d in active_dates:
+            ep_streak += 1
+        else:
+            break
+
+    # If engagement_stats missing, fallback to EpisodeAccess-derived counts
+    if not used_engagement_stats:
+        reader = ep_reader
+        motion = ep_motion
+        streak = ep_streak
+
+    # ---------- Premium (subscription-based) ----------
+    try:
+        SubscriptionModel = apps.get_model('premiumDesk', 'SubscriptionModel')
+    except LookupError:
+        SubscriptionModel = None
+
+    if SubscriptionModel is not None:
+        try:
+            is_premium = SubscriptionModel.objects.filter(user=user, end_date__gte=timezone.now()).exists()
+        except Exception:
+            is_premium = bool(getattr(user, "is_premium", False))
+    else:
+        is_premium = bool(getattr(user, "is_premium", False))
+
+    has_activity = 1 if (ep_reader > 0 or ep_motion > 0 or ep_streak > 0) else 0
+    score = (reader * 1.0) + (motion * 1.2) + (streak * 0.5)
+    return score, reader, motion, streak, is_premium, has_activity
+
+
+class LeaderboardViewSet(viewsets.ViewSet):
+    """
+    GET /api/community/leaderboard/?window=all|month|week&page=1
+
+    For now, 'month' and 'week' fallback to all-time until windowed stats are implemented.
+    Returns paginated:
+    {
+      "count": ...,
+      "next": ...,
+      "previous": ...,
+      "results": [
+        { "user": <CommunityUserSerializer payload>, "score": 862.0, "rank": 1 }
+      ]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+    pagination_class = LeaderboardPagination
+
+    def list(self, request):
+        window = (request.query_params.get('window') or 'all').lower().strip()
+        # Future: filter or switch to windowed stats here
+        if window not in ('all', 'month', 'week'):
+            window = 'all'
+
+        # Fetch users; if you want to exclude staff/moderators, filter here
+        users_qs = CustomUser.objects.all()
+
+        # Build entries with score and tie-breakers
+        entries = []
+        for u in users_qs:
+            score, reader, motion, streak, is_premium, has_activity = _leaderboard_score(u)
+            entries.append({
+                "user_obj": u,
+                "score": float(score),
+                "reader": reader,
+                "motion": motion,
+                "streak": streak,
+                "has_activity": has_activity,
+                "is_premium": is_premium,
+            })
+
+        # Sort:
+        #  1) score desc
+        #  2) streak desc
+        #  3) motion desc
+        #  4) reader desc
+        #  5) has_activity desc (ensures 1+ action beats true-zero ties)
+        #  6) premium desc (last tie-break)
+        entries.sort(
+            key=lambda e: (
+                e["score"],
+                e["streak"],
+                e["motion"],
+                e["reader"],
+                e["has_activity"],
+                1 if e["is_premium"] else 0,
+            ),
+            reverse=True
+        )
+
+        # Assign rank (1-based)
+        for idx, e in enumerate(entries):
+            e["rank"] = idx + 1
+
+        # Paginate the list
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(entries, request)
+
+        # Serialize user payloads
+        results = []
+        for e in page:
+            user_payload = CommunityUserSerializer(e["user_obj"], context={'request': request}).data
+            results.append({
+                "user": user_payload,
+                "score": e["score"],
+                "rank": e["rank"],
+            })
+
+        return paginator.get_paginated_response(results)

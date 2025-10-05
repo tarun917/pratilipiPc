@@ -234,7 +234,7 @@ class ComicViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(comic)
         data = dict(serializer.data)
 
-        # Truncate description
+        # Truncate description (for display preview)
         words = (data.get("description") or "").split()
         if len(words) > 50:
             data["description"] = " ".join(words[:50]) + " ...more"
@@ -269,6 +269,27 @@ class ComicViewSet(viewsets.ModelViewSet):
                 data["preview_file"] = preview_url
             except NoCredentialsError:
                 data["preview_file"] = None
+
+        # ===== Ensure Pages is always present (top-level and in specs) =====
+        # Make pages an int if possible
+        try:
+            pages_val = int(comic.pages or 0)
+        except Exception:
+            pages_val = None
+
+        # Top-level pages (do not overwrite if serializer already provided)
+        if (data.get("pages") in (None, "")) and (pages_val is not None):
+            data["pages"] = pages_val
+
+        # Specs map as fallback (string)
+        specs = data.get("specs") or {}
+        if not isinstance(specs, dict):
+            specs = {}
+        has_pages_key = any(k.lower() == "pages" and (specs[k] not in (None, "")) for k in specs.keys())
+        if (not has_pages_key) and (pages_val is not None):
+            specs["pages"] = str(pages_val)
+        data["specs"] = specs
+        # ===== End Pages guarantee =====
 
         return Response(data)
 
