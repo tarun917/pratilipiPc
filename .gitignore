@@ -1,23 +1,85 @@
 
+# Virtual Environment
 venv/
 .venv/
+env/
+ENV/
+
+# Python cache files
 *.pyc
-__pycache__/
 *.pyo
 *.pyd
-*.db
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django specific
+*.log
+db.sqlite3
 *.sqlite3
-*.env
+local_settings.py
+media/
+staticfiles/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Database files
+*.db
+dump.rdb
+*.rdb
+
+# Debug files
 debug.log
 *debug.log
-dump.rdb
-# Media uploads
-media/
-# IDE/config files
+
+# IDE/Editor files
 .DS_Store
 .vscode/
 .idea/
-# Log files
-*.log
-# System files
-Thumbs.dbdump.rdb
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+.directory
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
