@@ -10,6 +10,7 @@ class ComicModel(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)
     view_count = models.IntegerField(default=0)
     favourite_count = models.IntegerField(default=0)
+    share_count = models.IntegerField(default=0)  # comic-level share tracking
     rating_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
@@ -82,3 +83,26 @@ class EpisodeAccess(models.Model):
 
     def __str__(self):
         return f"{self.user.username} unlocked {self.episode} via {self.source}"
+
+
+class ComicRatingModel(models.Model):
+    """
+    Per-user rating for a motion comic. Use this to compute/maintain ComicModel.rating and rating_count.
+    """
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='motion_comic_ratings')
+    comic = models.ForeignKey(ComicModel, on_delete=models.CASCADE, related_name='ratings')
+    rating = models.PositiveSmallIntegerField()
+    rated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'comic')
+        indexes = [
+            models.Index(fields=['comic']),
+            models.Index(fields=['user', 'comic']),
+        ]
+        verbose_name = "Motion Comic Rating"
+        verbose_name_plural = "Motion Comic Ratings"
+
+    def __str__(self):
+        return f"{self.user_id}:{self.comic_id}={self.rating}"

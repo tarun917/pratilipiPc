@@ -37,7 +37,7 @@ class ComicAdmin(admin.ModelAdmin):
     )
     search_fields = ("title", "genres__name")
     list_filter = ("created_at", "genres", "stock_quantity")
-    readonly_fields = ("id", "rating", "rating_count", "buyer_count", "created_at")
+    readonly_fields = ("id", "buyer_count", "created_at")
     fields = (
         "title",
         "cover_image",

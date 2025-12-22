@@ -22,6 +22,8 @@ urlpatterns = [
     path('api/motioncomic/', include('motioncomicDesk.urls')),
     path('api/favourite/', include('favouriteDesk.urls')),
     path('api/creator/', include('creatorDesk.urls')),
+    path("api/activity/", include("readingActivityDesk.urls")),
+    path("api/", include("notificationDesk.urls")),
 
     # Payments
     path('api/payments/razorpay/', include('paymentsDesk.urls')),
