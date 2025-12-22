@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('creatorDesk', '000X_auto_20250710'),
+        ('creatorDesk', '0002_alter_submissions_status'),
     ]
 
     operations = [
