@@ -139,3 +139,17 @@ class EpisodeAccessSerializer(serializers.ModelSerializer):
         model = EpisodeAccess
         fields = ['id', 'user', 'episode', 'source', 'unlocked_at']
         read_only_fields = ['id', 'unlocked_at']
+
+
+class ComicMetaSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    cover_image = serializers.CharField(allow_null=True, required=False)
+    genre = serializers.CharField()
+    description = serializers.CharField()
+    avg_rating = serializers.DecimalField(max_digits=3, decimal_places=1, coerce_to_string=False)
+    rating_count = serializers.IntegerField()
+    user_rating = serializers.IntegerField(allow_null=True)
+    favourite_count = serializers.IntegerField()
+    share_count = serializers.IntegerField()
+    share_url = serializers.CharField()

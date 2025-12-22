@@ -9,10 +9,32 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from django.db.models import F
+
 from readingActivityDesk.models import ReadingActivity
 
-from .models import ComicModel, EpisodeModel, CommentModel, EpisodeAccess
+from .models import ComicModel, EpisodeModel, CommentModel, EpisodeAccess, ComicRatingModel
 from .serializers import ComicSerializer, EpisodeSerializer, CommentSerializer
+
+
+# -------------------------
+# Rating blend helper (editorial seed = 5.0 with virtual 20 users)
+# -------------------------
+def _blend_rating(user_avg: float, user_count: int, C: float = 5.0, m: int = 20) -> float:
+    """
+    Bayesian/blended rating:
+        score = (v/(v+m))*R + (m/(v+m))*C
+    - R: user_avg
+    - v: user_count
+    - C: editorial prior (launch seed) -> 5.0
+    - m: editorial weight (virtual users) -> 20
+    """
+    v = max(0, int(user_count or 0))
+    R = float(user_avg or 0.0)
+    if v <= 0 and m <= 0:
+        return 0.0
+    return ((v / (v + m)) * R) + ((m / (v + m)) * C)
+
 
 # -------------------------
 # Engagement utilities (safe)
@@ -31,6 +53,7 @@ def _get_or_create_engagement(user):
         return obj
     except Exception:
         return None
+
 
 def _bump_streak(es):
     """
@@ -59,6 +82,7 @@ def _bump_streak(es):
     except Exception:
         pass
 
+
 def _bump_motion_on_new_access(user, new_access_created: bool):
     """
     If we actually created a NEW EpisodeAccess just now, increment motion_watch_count
@@ -75,6 +99,7 @@ def _bump_motion_on_new_access(user, new_access_created: bool):
         es.save(update_fields=['motion_watch_count', 'streak_days', 'last_activity_date', 'updated_at'])
     except Exception:
         pass
+
 
 class MotionComicViewSet(viewsets.ModelViewSet):
     """
@@ -107,9 +132,32 @@ class MotionComicViewSet(viewsets.ModelViewSet):
         comic = self.get_object()
         # Return episodes sorted by episode_number
         episodes = EpisodeModel.objects.filter(comic=comic).order_by('episode_number')
+
+        # Include user-specific rating/meta
+        my_rating = None
+        try:
+            cr = ComicRatingModel.objects.filter(user=request.user, comic=comic).only('rating').first()
+            if cr:
+                my_rating = cr.rating
+        except Exception:
+            my_rating = None
+
+        # Serialize and override rating with blended score (seed 5 with 20 users)
+        comic_data = self.get_serializer(comic).data
+        user_avg = float(comic.rating or 0.0)
+        user_count = int(comic.rating_count or 0)
+        blended = _blend_rating(user_avg=user_avg, user_count=user_count, C=5.0, m=20)
+        comic_data['rating'] = round(blended, 1)
+
         return Response({
-            'comic': self.get_serializer(comic).data,
-            'episodes': EpisodeSerializer(episodes, many=True, context={'request': request}).data
+            'comic': comic_data,
+            'episodes': EpisodeSerializer(episodes, many=True, context={'request': request}).data,
+            'meta': {
+                'my_rating': my_rating,
+                'rating_count': comic.rating_count,
+                'share_count': getattr(comic, 'share_count', 0),
+                'share_url': build_motion_share_url(comic),
+            }
         })
 
     def _is_user_premium(self, user) -> bool:
@@ -218,21 +266,73 @@ class MotionComicViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
+    @transaction.atomic
     @action(detail=True, methods=['post'])
     def rate(self, request, pk=None):
+        """
+        Upsert user rating for a motion comic and update aggregates.
+        Body: { "rating": 1..5 }
+        Response: { "my_rating": int, "average_rating": float(1 decimal), "rating_count": int }
+        """
         comic = self.get_object()
-        rating = request.data.get('rating', 0)
+        user = request.user
         try:
-            rating = float(rating)
+            rating_val = int(request.data.get('rating', 0))
         except (TypeError, ValueError):
             return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
-        if 1 <= rating <= 5:
-            # Weighted average
-            comic.rating = ((comic.rating * comic.rating_count) + rating) / (comic.rating_count + 1)
-            comic.rating_count += 1
-            comic.save(update_fields=['rating', 'rating_count'])
-            return Response({"rating": float(comic.rating)}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not (1 <= rating_val <= 5):
+            return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
+
+        existing = ComicRatingModel.objects.filter(user=user, comic=comic).first()
+
+        # Compute totals (pure user-average in DB)
+        current_avg = float(comic.rating or 0.0)
+        current_count = int(comic.rating_count or 0)
+        total = current_avg * current_count
+
+        if existing:
+            # Replace old with new
+            total = total - int(existing.rating) + rating_val
+            new_count = current_count if current_count > 0 else 1
+            existing.rating = rating_val
+            existing.save(update_fields=['rating', 'rated_at'])
+        else:
+            # New rating
+            total = total + rating_val
+            new_count = current_count + 1
+            ComicRatingModel.objects.create(user=user, comic=comic, rating=rating_val)
+
+        new_user_avg = round(total / new_count, 1) if new_count > 0 else 0.0
+        comic.rating = new_user_avg
+        comic.rating_count = new_count
+        comic.save(update_fields=['rating', 'rating_count'])
+
+        # Respond with blended displayed average (seed 5 with 20 users)
+        blended = _blend_rating(user_avg=new_user_avg, user_count=new_count, C=5.0, m=20)
+        return Response(
+            {"my_rating": rating_val, "average_rating": round(blended, 1), "rating_count": comic.rating_count},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        """
+        Comic-level share bump + return share URL for client share sheet.
+        Response: { "share_count": int, "share_url": "https://..." }
+        """
+        comic = self.get_object()
+        if hasattr(comic, 'share_count'):
+            ComicModel.objects.filter(id=comic.id).update(share_count=F('share_count') + 1)
+            comic.refresh_from_db(fields=['share_count'])
+            share_count = comic.share_count
+        else:
+            # Backward compat if field missing
+            share_count = 0
+        return Response(
+            {"share_count": share_count, "share_url": build_motion_share_url(comic)},
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
@@ -269,13 +369,6 @@ class MotionComicViewSet(viewsets.ModelViewSet):
             comment.save(update_fields=['likes_count'])
             return Response({"likes_count": comment.likes_count}, status=status.HTTP_200_OK)
         return Response({"error": "Comment ID required"}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=True, methods=['post'])
-    def share(self, request, pk=None):
-        comic = self.get_object()
-        comic.favourite_count += 1  # simple placeholder metric
-        comic.save(update_fields=['favourite_count'])
-        return Response({"favourite_count": comic.favourite_count}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def favourite(self, request, pk=None):
@@ -360,6 +453,7 @@ class MotionComicViewSet(viewsets.ModelViewSet):
         _mark_finished_motion(request.user, comic)
         return Response({"ok": True}, status=status.HTTP_200_OK)
 
+
 class EpisodeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """
     GET /api/motioncomic/motioncomic/episode/{id}/
@@ -413,8 +507,10 @@ class EpisodeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         serializer = self.get_serializer(instance, context={'request': request})
         return Response(serializer.data)
 
+
 # --- Reading Activity helpers (Motion) ---
 FINISH_THRESHOLD = 95.0  # server-side completion rule
+
 
 def _record_motion_progress(user, comic, episode, progress_percent, position_ms=None,
                             comic_title="", episode_label="", cover_url=""):
@@ -430,12 +526,14 @@ def _record_motion_progress(user, comic, episode, progress_percent, position_ms=
         ra.progress_percent = p
         if position_ms is not None:
             ra.position_ms = position_ms
-        if comic_title: ra.comic_title = comic_title
-        if episode_label: ra.episode_label = episode_label
-        if cover_url: ra.cover_url = cover_url
+        if comic_title:
+            ra.comic_title = comic_title
+        if episode_label:
+            ra.episode_label = episode_label
+        if cover_url:
+            ra.cover_url = cover_url
 
         # If user is watching again with < FINISH_THRESHOLD, make it in-progress again
-        FINISH_THRESHOLD = 95.0
         if p < FINISH_THRESHOLD:
             ra.finished_at = None  # bring it back to in-progress
 
@@ -445,6 +543,7 @@ def _record_motion_progress(user, comic, episode, progress_percent, position_ms=
         ra.save()
     except Exception:
         pass
+
 
 def _mark_finished_motion(user, comic: ComicModel):
     """
@@ -462,3 +561,9 @@ def _mark_finished_motion(user, comic: ComicModel):
         ra.save()
     except Exception:
         pass
+
+
+def build_motion_share_url(comic: ComicModel) -> str:
+    # MVP: ID-based link; slug later
+    BASE = "https://app.pratilipibox.com/motion/comic"
+    return f"{BASE}/{comic.id}/"

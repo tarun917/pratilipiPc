@@ -2,12 +2,14 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.apps import apps
 from django.utils import timezone
+from django.db.models import F
 
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
+from .models import ComicRatingModel
 from readingActivityDesk.models import ReadingActivity
 
 from .models import (
@@ -24,6 +26,25 @@ from .serializers import (
     SliceSerializer,
 )
 from .integrations import is_user_premium, debit_coins
+
+
+# -------------------------
+# Rating blend helper
+# -------------------------
+def _blend_rating(user_avg: float, user_count: int, C: float = 5.0, m: int = 20) -> float:
+    """
+    Bayesian/blended rating:
+        score = (v/(v+m))*R + (m/(v+m))*C
+    - R: user_avg
+    - v: user_count
+    - C: editorial prior (launch seed) -> 5.0
+    - m: editorial weight (virtual users) -> 20
+    """
+    v = max(0, int(user_count or 0))
+    R = float(user_avg or 0.0)
+    if v <= 0 and m <= 0:
+        return 0.0
+    return ((v / (v + m)) * R) + ((m / (v + m)) * C)
 
 
 # -------------------------
@@ -65,7 +86,8 @@ def _bump_streak(es):
         if last is None:
             es.streak_days = max(1, es.streak_days or 0)
         else:
-            delta = (今天 - last).days if False else (today - last).days  # defensive: keep original behavior
+            # Defensive: keep original pattern
+            delta = (today - last).days
             if delta == 1:
                 es.streak_days = (es.streak_days or 0) + 1
             else:
@@ -116,6 +138,7 @@ class DigitalComicViewSet(viewsets.ModelViewSet):
     - NEW:
       - POST  /api/digitalcomic/digitalcomic/<comic_id>/progress/
       - POST  /api/digitalcomic/digitalcomic/<comic_id>/mark-finished/
+      - POST  /api/digitalcomic/digitalcomic/<comic_id>/share/     (comic-level share)
     """
     queryset = ComicModel.objects.all()
     serializer_class = ComicSerializer
@@ -132,10 +155,34 @@ class DigitalComicViewSet(viewsets.ModelViewSet):
     def details(self, request, pk=None):
         comic = self.get_object()
         episodes = EpisodeModel.objects.filter(comic=comic).order_by('episode_number')
-        return Response({
-            'comic': self.get_serializer(comic).data,
-            'episodes': EpisodeSerializer(episodes, many=True).data
-        })
+
+        # Include user-specific rating (my_rating)
+        my_rating = None
+        try:
+            cr = ComicRatingModel.objects.filter(user=request.user, comic=comic).only('rating').first()
+            if cr:
+                my_rating = cr.rating
+        except Exception:
+            my_rating = None
+
+        # Serialize comic and override displayed rating with blended score
+        comic_data = self.get_serializer(comic).data
+        user_avg = float(comic.rating or 0.0)
+        user_count = int(comic.rating_count or 0)
+        blended = _blend_rating(user_avg=user_avg, user_count=user_count, C=5.0, m=20)
+        comic_data['rating'] = round(blended, 1)
+
+        payload = {
+            'comic': comic_data,
+            'episodes': EpisodeSerializer(episodes, many=True).data,
+            'meta': {
+                'my_rating': my_rating,
+                'share_count': comic.share_count,
+                'share_url': build_comic_share_url(comic),
+                'rating_count': comic.rating_count,
+            }
+        }
+        return Response(payload)
 
     @transaction.atomic
     @action(detail=True, methods=['post'])
@@ -208,21 +255,70 @@ class DigitalComicViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @transaction.atomic
     @action(detail=True, methods=['post'])
     def rate(self, request, pk=None):
+        """
+        Upsert user rating for a comic and update aggregates.
+        Body: { "rating": 1..5 }
+        Response: { "my_rating": int, "average_rating": float(1 decimal), "rating_count": int }
+        """
         comic = self.get_object()
+        user = request.user
         try:
-            rating = float(request.data.get('rating', 0))
+            rating_val = int(request.data.get('rating', 0))
         except (TypeError, ValueError):
             return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if 1.0 <= rating <= 5.0:
-            new_total = (float(comic.rating) * comic.rating_count) + rating
-            comic.rating_count += 1
-            comic.rating = round(new_total / comic.rating_count, 1)
-            comic.save(update_fields=['rating', 'rating_count'])
-            return Response({"rating": comic.rating}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
+        if not (1 <= rating_val <= 5):
+            return Response({"error": "Invalid rating"}, status=status.HTTP_400_BAD_REQUEST)
+
+        existing = ComicRatingModel.objects.filter(user=user, comic=comic).first()
+
+        # Compute totals for pure user-average
+        current_avg = float(comic.rating or 0.0)
+        current_count = int(comic.rating_count or 0)
+        total = current_avg * current_count
+
+        if existing:
+            # Replace old with new
+            total = total - int(existing.rating) + rating_val
+            # count unchanged
+            new_count = current_count if current_count > 0 else 1
+            existing.rating = rating_val
+            existing.save(update_fields=['rating', 'rated_at'])
+        else:
+            # New rating
+            total = total + rating_val
+            new_count = current_count + 1
+            ComicRatingModel.objects.create(user=user, comic=comic, rating=rating_val)
+
+        new_user_avg = round(total / new_count, 1) if new_count > 0 else 0.0
+        comic.rating = new_user_avg
+        comic.rating_count = new_count
+        comic.save(update_fields=['rating', 'rating_count'])
+
+        # Respond with blended displayed average
+        blended = _blend_rating(user_avg=new_user_avg, user_count=new_count, C=5.0, m=20)
+        return Response(
+            {"my_rating": rating_val, "average_rating": round(blended, 1), "rating_count": comic.rating_count},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        """
+        Comic-level share bump + return share URL for client share sheet.
+        Response: { "share_count": int, "share_url": "https://..." }
+        """
+        comic = self.get_object()
+        # Atomic increment
+        ComicModel.objects.filter(id=comic.id).update(share_count=F('share_count') + 1)
+        comic.refresh_from_db(fields=['share_count'])
+        return Response(
+            {"share_count": comic.share_count, "share_url": build_comic_share_url(comic)},
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
@@ -497,6 +593,7 @@ def _record_reading_progress_digital(
         print("[DigitalActivity] Save failed:", repr(e))
         raise
 
+
 def _mark_finished_digital(user, comic: ComicModel):
     """
     Mark a digital comic as finished (100%). Keeps row to power 'Read Again'.
@@ -514,3 +611,9 @@ def _mark_finished_digital(user, comic: ComicModel):
         ra.save()
     except Exception:
         pass
+
+
+def build_comic_share_url(comic: ComicModel) -> str:
+    # MVP: ID based link; slug later
+    BASE = "https://app.pratilipibox.com/digital/comic"
+    return f"{BASE}/{comic.id}/"

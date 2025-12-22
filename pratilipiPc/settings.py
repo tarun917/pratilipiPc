@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import dj_database_url
 
 
 # Build paths
@@ -12,9 +13,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Secrets and security
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = True
+DEBUG = config('DEBUG', default='True', cast=bool)
 ALLOWED_HOSTS = ['*', '139.59.29.54', 'localhost', '106.51.236.218']
-INTERNAL_IPS = ['127.0.0.1', 'localhost', '106.51.236.218', '192.168.1.3', '192.168.1.10', '192.168.1.9', '10.1.3.8', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.1.2.124']
+
+# Heroku specific
+if 'DYNO' in os.environ:
+    DEBUG = False
+    ALLOWED_HOSTS = ['*']
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '106.51.236.218', '192.168.1.5', '192.168.1.2', '192.168.1.10', '10.1.3.8', '10.82.85.84', '10.141.43.117', '10.141.43.84', '10.10.2.21']
 
 
 # Feature flags
@@ -43,8 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-
-    'debug_toolbar',
+    'corsheaders',
 
     'profileDesk',
     'authDesk',
@@ -69,10 +74,15 @@ INSTALLED_APPS = [
 if STORAGES_AVAILABLE:
     INSTALLED_APPS.append('storages')
 
+# Add debug toolbar only in DEBUG mode
+if DEBUG:
+    INSTALLED_APPS.append('debug_toolbar')
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -80,6 +90,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Add debug toolbar middleware only in DEBUG mode
+if DEBUG:
+    MIDDLEWARE.insert(2, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 
 ROOT_URLCONF = 'pratilipiPc.urls'
@@ -119,12 +133,16 @@ DATABASES = {
     }
 }
 
+# Heroku: Override database with DATABASE_URL if present
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
+
 
 # Cache (Redis)
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/0',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/0'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
@@ -150,8 +168,12 @@ USE_TZ = True
 
 # Static/Media
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Whitenoise configuration for static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -258,3 +280,21 @@ if STORAGES_AVAILABLE:
     # Only enable if all essentials are present
     if all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME]):
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+
+# -----------------------------
+# CORS Configuration (for Android App)
+# -----------------------------
+CORS_ALLOW_ALL_ORIGINS = True  # For development
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]

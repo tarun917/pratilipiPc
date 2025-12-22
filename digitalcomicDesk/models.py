@@ -19,6 +19,7 @@ class ComicModel(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)
     view_count = models.IntegerField(default=0)
     favourite_count = models.IntegerField(default=0)
+    share_count = models.IntegerField(default=0)  # comic-level share tracking
     rating_count = models.PositiveIntegerField(default=0)
     is_creator_comic = models.BooleanField(default=False)
 
@@ -174,3 +175,23 @@ class CommentModel(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.comment_text}"
+
+
+class ComicRatingModel(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='digital_comic_ratings')
+    comic = models.ForeignKey(ComicModel, on_delete=models.CASCADE, related_name='ratings')
+    rating = models.PositiveSmallIntegerField()
+    rated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'comic')
+        indexes = [
+            models.Index(fields=['comic']),
+            models.Index(fields=['user', 'comic']),
+        ]
+        verbose_name = "Comic Rating"
+        verbose_name_plural = "Comic Ratings"
+
+    def __str__(self):
+        return f"{self.user_id}:{self.comic_id}={self.rating}"

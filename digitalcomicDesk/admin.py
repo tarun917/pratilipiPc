@@ -18,12 +18,52 @@ from .services import import_episode_slices_zip
     # Expects import_episode_slices_zip(episode, zip_file) -> report with .errors, .created_slices, .replaced_existing, .accepted_images, .total_in_zip
 
 
+# -------------------------
+# Rating blend helper (editorial seed = 5.0 with virtual 20 users)
+# -------------------------
+def _blend_rating(user_avg: float, user_count: int, C: float = 5.0, m: int = 20) -> float:
+    """
+    Bayesian/blended rating:
+        score = (v/(v+m))*R + (m/(v+m))*C
+    - R: user_avg
+    - v: user_count
+    - C: editorial prior (launch seed) -> 5.0
+    - m: editorial weight (virtual users) -> 20
+    """
+    try:
+        v = max(0, int(user_count or 0))
+        R = float(user_avg or 0.0)
+        if v <= 0 and m <= 0:
+            return 0.0
+        return ((v / (v + m)) * R) + ((m / (v + m)) * C)
+    except Exception:
+        # Defensive fallback
+        return float(user_avg or 0.0)
+
+
 @admin.register(ComicModel)
 class ComicAdmin(admin.ModelAdmin):
-    list_display = ('title', 'genre', 'rating', 'view_count', 'favourite_count')
+    # Show blended (display) + raw DB fields for ops transparency
+    list_display = (
+        'title',
+        'genre',
+        'display_rating',   # blended (seeded 5 with 20 users)
+        'rating',           # raw user average in DB
+        'rating_count',     # raw user count in DB
+        'view_count',
+        'favourite_count',
+    )
     search_fields = ('title', 'genre')
     list_filter = ('genre',)
-    readonly_fields = ()
+    # rating & rating_count are user-driven; do not edit from admin
+    readonly_fields = ('rating', 'rating_count')
+
+    def display_rating(self, obj):
+        score = _blend_rating(obj.rating, obj.rating_count, C=5.0, m=20)
+        return f"{score:.1f}"
+    display_rating.short_description = "Displayed Rating (Blended)"
+    # Sorting by raw rating when clicking this column header (approximate)
+    display_rating.admin_order_field = 'rating'
 
 
 class SliceInline(admin.TabularInline):
