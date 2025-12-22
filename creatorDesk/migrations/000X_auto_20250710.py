@@ -19,14 +19,17 @@ class Migration(migrations.Migration):
     dependencies = [('creatorDesk', '0002_alter_submissions_status')]
     operations = [
         migrations.RunSQL(
-            "ALTER TABLE creatorDesk_creatorcomics DROP FOREIGN KEY creatorDesk_creatorc_submission_id_id_88917d6e_fk_creatorDe;"
+            sql="ALTER TABLE creatorDesk_creatorcomics DROP CONSTRAINT IF EXISTS creatorDesk_creatorc_submission_id_id_88917d6e_fk_creatorDe;",
+            reverse_sql=migrations.RunSQL.noop
         ),
         migrations.RunSQL(
-            "ALTER TABLE creatorDesk_submissions MODIFY id CHAR(36);"
+            sql="ALTER TABLE creatorDesk_submissions ALTER COLUMN id TYPE VARCHAR(36);",
+            reverse_sql=migrations.RunSQL.noop
         ),
-        migrations.RunPython(update_uuids),
+        migrations.RunPython(update_uuids, reverse_code=migrations.RunPython.noop),
         migrations.RunSQL(
-            "ALTER TABLE creatorDesk_creatorcomics ADD FOREIGN KEY (submission_id_id) REFERENCES creatordesk_submissions(id);"
+            sql="ALTER TABLE creatorDesk_creatorcomics ADD CONSTRAINT creatorDesk_creatorc_submission_id_id_88917d6e_fk_creatorDe FOREIGN KEY (submission_id_id) REFERENCES creatordesk_submissions(id);",
+            reverse_sql=migrations.RunSQL.noop
         ),
         migrations.AlterField(
             model_name='submissions',
