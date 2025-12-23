@@ -6,6 +6,9 @@ from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserSerializer(serializers.ModelSerializer):
+    # Override terms_accepted to handle string "true"/"false" from Android
+    terms_accepted = serializers.BooleanField(required=False, default=False)
+    
     class Meta:
         model = CustomUser
         fields = ['username', 'full_name', 'email', 'mobile_number', 'password', 'terms_accepted']
@@ -13,7 +16,6 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
             'email': {'required': True},
             'mobile_number': {'required': False, 'allow_blank': True, 'allow_null': True},
-            'terms_accepted': {'required': False, 'default': False},
         }
 
     def validate_username(self, value):
