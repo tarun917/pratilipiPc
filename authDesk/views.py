@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import action
 import logging
 
 from profileDesk.models import CustomUser
@@ -14,13 +15,14 @@ logger = logging.getLogger(__name__)
 
 class AuthViewSet(viewsets.GenericViewSet):
     permission_classes = [AllowAny]
+    serializer_class = UserSerializer
 
     def get_serializer_class(self):
         if self.action == 'register':
             return UserSerializer
         elif self.action == 'login':
             return LoginSerializer
-        return None
+        return UserSerializer
 
     def register(self, request):
         logger.debug(f"Register attempt with data: {request.data}")
