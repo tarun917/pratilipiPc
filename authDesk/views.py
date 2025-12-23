@@ -17,20 +17,28 @@ class SignupView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                user = serializer.save()
-                refresh = RefreshToken.for_user(user)
-                return Response({
-                    "token": str(refresh.access_token),
-                    "refresh_token": str(refresh),
-                    "userId": user.id,
-                    "username": user.username
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            logger.info(f"Signup request data: {request.data}")
+            serializer = UserSerializer(data=request.data)
+            if serializer.is_valid():
+                try:
+                    user = serializer.save()
+                    refresh = RefreshToken.for_user(user)
+                    logger.info(f"User created successfully: {user.username}")
+                    return Response({
+                        "token": str(refresh.access_token),
+                        "refresh_token": str(refresh),
+                        "userId": user.id,
+                        "username": user.username
+                    }, status=status.HTTP_201_CREATED)
+                except Exception as e:
+                    logger.error(f"Error creating user: {str(e)}", exc_info=True)
+                    return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"Serializer validation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Unexpected error in signup: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
