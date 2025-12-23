@@ -22,13 +22,6 @@ class AuthViewSet(viewsets.GenericViewSet):
             return LoginSerializer
         return None
 
-    def create(self, request, *args, **kwargs):
-        if request.path.endswith('signup/'):
-            return self.register(request)
-        elif request.path.endswith('login/'):
-            return self.login(request)
-        return Response({"error": "Invalid endpoint"}, status=status.HTTP_400_BAD_REQUEST)
-
     def register(self, request):
         logger.debug(f"Register attempt with data: {request.data}")
         serializer = self.get_serializer(data=request.data)
