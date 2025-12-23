@@ -41,7 +41,9 @@ class UserSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_mobile_number(self, value):
-        # Add mobile number validation if needed
+        # Convert empty string to None for unique constraint
+        if value == '' or not value:
+            return None
         return value
 
     def create(self, validated_data):
