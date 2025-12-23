@@ -13,6 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
             'email': {'required': True},
             'mobile_number': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'terms_accepted': {'required': False, 'default': False},
         }
 
     def validate_username(self, value):
