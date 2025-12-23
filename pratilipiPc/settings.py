@@ -298,3 +298,9 @@ CORS_ALLOWED_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# CSRF Configuration for production domain
+CSRF_TRUSTED_ORIGINS = [
+    'https://indflix.app',
+    'https://pratilipi-box-backend-3bf05bcf4302.herokuapp.com',
+]
