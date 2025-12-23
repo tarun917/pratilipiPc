@@ -25,7 +25,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    mobile_number = models.CharField(max_length=15, unique=True)
+    mobile_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
     unique_id = models.CharField(max_length=36, unique=True, default=uuid.uuid4)
     profile_image = models.ImageField(upload_to='profiles/', null=True, blank=True)
     about = models.TextField(null=True, blank=True)
@@ -46,7 +46,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email', 'full_name', 'mobile_number']
+    REQUIRED_FIELDS = ['email', 'full_name']
 
     class Meta:
         indexes = [
