@@ -1,11 +1,11 @@
 import json
 from django.http import JsonResponse
-from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import action
 import logging
 
 from profileDesk.models import CustomUser
@@ -13,20 +13,12 @@ from .serializers import UserSerializer, LoginSerializer
 
 logger = logging.getLogger(__name__)
 
-class AuthViewSet(viewsets.GenericViewSet):
+class SignupView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = UserSerializer
 
-    def get_serializer_class(self):
-        if self.action == 'register':
-            return UserSerializer
-        elif self.action == 'login':
-            return LoginSerializer
-        return UserSerializer
-
-    def register(self, request):
+    def post(self, request):
         logger.debug(f"Register attempt with data: {request.data}")
-        serializer = self.get_serializer(data=request.data)
+        serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             try:
                 user = serializer.save()
@@ -44,9 +36,12 @@ class AuthViewSet(viewsets.GenericViewSet):
         logger.error(f"Registration failed: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def login(self, request):
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
         logger.debug(f"Login attempt with data: {request.data}")
-        serializer = self.get_serializer(data=request.data)
+        serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user_data = serializer.validated_data
             logger.info(f"User logged in: {user_data['username']}")
