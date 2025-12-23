@@ -145,6 +145,9 @@ CACHES = {
         'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/0'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'ssl_cert_reqs': None  # Disable SSL certificate verification for Heroku Redis
+            }
         }
     }
 }
