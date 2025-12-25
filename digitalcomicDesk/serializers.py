@@ -118,16 +118,17 @@ class EpisodeSlicesResponseSerializer(serializers.Serializer):
     """
     Response shape for: GET /episode/<id>/slices
     {
-      "episode_id": "<uuid>",
-      "next_episode_id": "<uuid>|null",
+      "episode_id": "<int>",
+      "next_episode_id": "<int>|null",
       "locked": true|false,
+      "comic_id": "<int>",
       "slices": [{ order, url, width, height }]
     }
     """
     episode_id = serializers.CharField()
     next_episode_id = serializers.CharField(allow_null=True)
     locked = serializers.BooleanField()
-    comic_id = serializers.CharField()              # add this
+    comic_id = serializers.CharField()
     slices = SliceSerializer(many=True)
 
 
@@ -142,7 +143,7 @@ class EpisodeAccessSerializer(serializers.ModelSerializer):
 
 
 class ComicMetaSerializer(serializers.Serializer):
-    id = serializers.UUIDField()
+    id = serializers.IntegerField()
     title = serializers.CharField()
     cover_image = serializers.CharField(allow_null=True, required=False)
     genre = serializers.CharField()

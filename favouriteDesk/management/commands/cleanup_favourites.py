@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from uuid import UUID
 
 from favouriteDesk.models import FavouriteModel
 from digitalcomicDesk.models import ComicModel as DigitalComicModel
@@ -17,13 +16,11 @@ def canonical_type(t: str) -> str:
 
 
 def normalize_id(ct: str, value: str) -> str:
-    if ct == "digital":
-        # lower-case canonical UUID string
-        try:
-            return str(UUID(str(value))).lower()
-        except Exception:
-            return str(value).lower()
-    return str(value)
+    """
+    Normalize IDs - both digital and motion comics now use simple integer IDs.
+    Just return as string.
+    """
+    return str(value).strip()
 
 
 class Command(BaseCommand):
@@ -50,20 +47,8 @@ class Command(BaseCommand):
                 if prev is None or (getattr(r, "created_at", None) and getattr(prev, "created_at", None) and r.created_at > prev.created_at):
                     by_key[key] = r
 
-            # Purge all then re-insert unique normalized rows
+            # Delete all and bulk create deduplicated
             FavouriteModel.objects.all().delete()
             FavouriteModel.objects.bulk_create(by_key.values())
 
-            # Optional: drop rows whose comic does not exist anymore
-            to_delete = []
-            for r in FavouriteModel.objects.all():
-                if r.comic_type == "digital":
-                    if not DigitalComicModel.objects.filter(id__iexact=r.comic_id).exists():
-                        to_delete.append(r.id)
-                else:
-                    if not MotionComicModel.objects.filter(id=r.comic_id).exists():
-                        to_delete.append(r.id)
-            if to_delete:
-                FavouriteModel.objects.filter(id__in=to_delete).delete()
-
-        self.stdout.write(self.style.SUCCESS("Favourites cleanup complete."))
+        self.stdout.write(self.style.SUCCESS(f"Cleanup complete. {len(by_key)} favourites retained."))

@@ -1,17 +1,15 @@
-import uuid
 from django.db import models
 from django.utils import timezone
 from profileDesk.models import CustomUser
 
 
 def slice_upload_path(instance, filename):
-    # Store under: digitalcomics/episodes/<episode_uuid>/slices/<filename>
+    # Store under: digitalcomics/episodes/<episode_id>/slices/<filename>
     # Admin import will standardize filenames (e.g., 0001.jpg, 0002.jpg ...)
     return f"digitalcomics/episodes/{instance.episode_id}/slices/{filename}"
 
 
 class ComicModel(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200)
     genre = models.CharField(max_length=100)
     cover_image = models.ImageField(upload_to='digitalcomics/covers/', null=True, blank=True)
@@ -89,7 +87,6 @@ class SliceModel(models.Model):
     Order starts from 1 and increases without gaps ideally.
     Height is optional; when provided, clients can pre-size items for better UX.
     """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     episode = models.ForeignKey(EpisodeModel, on_delete=models.CASCADE, related_name='slices')
     order = models.PositiveIntegerField(help_text="1-based sequential order within the episode")
     file = models.ImageField(upload_to=slice_upload_path)
@@ -122,7 +119,6 @@ class EpisodeAccess(models.Model):
         (SOURCE_PREMIUM, 'Premium'),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='digital_episode_access')
     episode = models.ForeignKey(EpisodeModel, on_delete=models.CASCADE, related_name='access_records')
     source = models.CharField(max_length=16, choices=SOURCE_CHOICES)

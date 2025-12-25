@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from .models import CarouselItemModel
-import uuid
+
 
 class CarouselItemForm(forms.ModelForm):
     class Meta:
@@ -13,19 +13,19 @@ class CarouselItemForm(forms.ModelForm):
         ctype = cleaned.get("type")
         tid = (cleaned.get("target_id") or "").strip()
 
+        # Both digital and motion comics now use simple integer IDs
         if ctype == "digital":
             if not tid:
-                raise forms.ValidationError("For digital, target_id (UUID) is required.")
-            # Accept 32-hex or hyphenated; normalize to hyphenated
-            try:
-                cleaned["target_id"] = str(uuid.UUID(tid))
-            except Exception:
-                raise forms.ValidationError("For digital, target_id must be a valid UUID (32-hex or hyphenated).")
+                raise forms.ValidationError("For digital, target_id (comic ID) is required.")
+            if not tid.isdigit():
+                raise forms.ValidationError("For digital, target_id must be a valid integer (e.g., 1, 2, 3).")
         elif ctype == "motion":
             if not tid:
-                raise forms.ValidationError("For motion, target_id (integer as string) is required.")
+                raise forms.ValidationError("For motion, target_id (comic ID) is required.")
             if not tid.isdigit():
-                raise forms.ValidationError("For motion, target_id must be digits only (e.g., 12).")
+                raise forms.ValidationError("For motion, target_id must be a valid integer (e.g., 1, 2, 3).")
+
+        cleaned["target_id"] = tid
         return cleaned
 
 

@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,7 +9,7 @@ from django.core.cache import cache
 from .models import FavouriteModel
 from .serializers import FavouriteSerializer, FavouriteStatusSerializer
 from digitalcomicDesk.models import ComicModel as DigitalComicModel
-from motioncomicDesk.models import ComicModel as MotionComicModel  # fixed import
+from motioncomicDesk.models import ComicModel as MotionComicModel
 
 
 def canonical_type(t: str | None) -> str | None:
@@ -39,14 +37,10 @@ def alias_types(t: str | None) -> list[str]:
 
 def _normalize_id(value: str) -> str:
     """
-    Normalize IDs so future lookups are consistent.
-    - If it parses as a UUID, store lower-case canonical string.
-    - Otherwise, return string as-is.
+    Normalize IDs - both digital and motion comics now use simple integer IDs.
+    Just return as string.
     """
-    try:
-        return str(UUID(str(value))).lower()
-    except Exception:
-        return str(value)
+    return str(value).strip()
 
 
 class FavouriteViewSet(viewsets.ViewSet):
@@ -64,7 +58,7 @@ class FavouriteViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     # POST /api/favourite/favourites/
-    # Body: { "comic_type": "digital"|"motion", "comic_id": "<id or uuid>" }
+    # Body: { "comic_type": "digital"|"motion", "comic_id": "<int>" }
     def create(self, request):
         user = request.user
         t = canonical_type(request.data.get("comic_type"))
@@ -77,9 +71,9 @@ class FavouriteViewSet(viewsets.ViewSet):
         if not comic_id_raw:
             return Response({"error": "comic_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate target exists (case-insensitive for digital UUIDs)
+        # Validate target exists - both use simple integer IDs now
         if t == "digital":
-            exists = DigitalComicModel.objects.filter(id__iexact=comic_id_raw).exists()
+            exists = DigitalComicModel.objects.filter(id=comic_id_raw).exists()
         else:  # motion
             exists = MotionComicModel.objects.filter(id=comic_id_raw).exists()
         if not exists:
@@ -87,27 +81,20 @@ class FavouriteViewSet(viewsets.ViewSet):
                 {"error": f"{t} comic with id '{comic_id_raw}' not found"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
 
-        key = f"fav:recently_deleted:{user.id}:{t}:{str(comic_id_raw).lower()}"
+        key = f"fav:recently_deleted:{user.id}:{t}:{str(comic_id_raw)}"
         if cache.get(key):
-    # Ignore accidental auto re-add right after delete
+            # Ignore accidental auto re-add right after delete
             return Response({"message": "Skipped re-add (just removed)"}, status=status.HTTP_200_OK)
 
-        # Normalize stored id (UUID -> lower-case canonical)
+        # Normalize stored id
         stored_id = _normalize_id(comic_id_raw)
 
         # Cleanup any legacy alias rows to avoid duplicates
-        # e.g., if an older row exists with comic_type='digitalcomic'
         FavouriteModel.objects.filter(
             user=user,
             comic_type__in=alias_types(t),
-            # Case-insensitive match for digital UUIDs
-            **(
-                {"comic_id__iexact": stored_id}
-                if t == "digital" else
-                {"comic_id": stored_id}
-            )
+            comic_id=stored_id
         ).delete()
 
         # Create under the canonical type only
@@ -132,28 +119,20 @@ class FavouriteViewSet(viewsets.ViewSet):
                 {"error": "comic_type and comic_id required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        key = f"fav:recently_deleted:{user.id}:{t}:{str(comic_id).lower()}"
+
+        key = f"fav:recently_deleted:{user.id}:{t}:{str(comic_id)}"
         cache.set(key, True, timeout=10)  # 10 seconds window
 
-        # Build a queryset that removes both canonical and alias types to prevent reappearance
+        # Build a queryset that removes both canonical and alias types
         type_set = alias_types(t)
-        if t == "digital":
-            qs = FavouriteModel.objects.filter(
-                user=user,
-                comic_type__in=type_set,
-                comic_id__iexact=str(comic_id)
-            )
-        else:
-            qs = FavouriteModel.objects.filter(
-                user=user,
-                comic_type__in=type_set,
-                comic_id=str(comic_id)
-            )
+        qs = FavouriteModel.objects.filter(
+            user=user,
+            comic_type__in=type_set,
+            comic_id=str(comic_id)
+        )
 
         deleted, _ = qs.delete()
         if deleted == 0:
-            # Keep 404 for proper semantics, but we already cover both types and case-insensitive for digital
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -170,18 +149,11 @@ class FavouriteViewSet(viewsets.ViewSet):
 
         # Consider both canonical and alias types to report accurate status
         type_set = alias_types(t)
-        if t == "digital":
-            is_favourite = FavouriteModel.objects.filter(
-                user=user,
-                comic_type__in=type_set,
-                comic_id__iexact=str(comic_id)
-            ).exists()
-        else:
-            is_favourite = FavouriteModel.objects.filter(
-                user=user,
-                comic_type__in=type_set,
-                comic_id=str(comic_id)
-            ).exists()
+        is_favourite = FavouriteModel.objects.filter(
+            user=user,
+            comic_type__in=type_set,
+            comic_id=str(comic_id)
+        ).exists()
 
         serializer = FavouriteStatusSerializer({"is_favourite": is_favourite})
         return Response(serializer.data)

@@ -1,10 +1,10 @@
 from django.db import models
 from profileDesk.models import CustomUser
-import uuid
 from rest_framework import serializers
 
+
 class TermsAndConditions(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Using default BigAutoField (simple integer ID)
     version = models.CharField(max_length=10)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -12,8 +12,9 @@ class TermsAndConditions(models.Model):
     def __str__(self):
         return f"Terms v{self.version}"
 
+
 class Submissions(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Using default BigAutoField (simple integer ID)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     genre = models.CharField(max_length=100)
@@ -40,8 +41,9 @@ class Submissions(models.Model):
     def __str__(self):
         return f"Submission {self.title} by {self.user.username}"
 
+
 class CreatorComics(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Using default BigAutoField (simple integer ID)
     submission_id = models.ForeignKey(Submissions, on_delete=models.CASCADE)
     comic_id = models.ForeignKey('digitalcomicDesk.ComicModel', on_delete=models.CASCADE)
     publish_date = models.DateTimeField(null=True, blank=True)

@@ -189,7 +189,7 @@ class DigitalComicViewSet(viewsets.ModelViewSet):
     def unlock(self, request, pk=None):
         """
         Contract:
-        - Body: { "episode_id": "<uuid>" }
+        - Body: { "episode_id": "<int>" }
         - 200: { "unlocked": true, "source": "ALREADY" | "PREMIUM" }
         - 201: { "unlocked": true, "source": "COINS", "balance": <int> }
         - 400: { "error": "<msg>", "code": "bad_request|invalid_episode|insufficient_balance" }
@@ -415,7 +415,7 @@ class DigitalComicViewSet(viewsets.ModelViewSet):
         Upsert reading progress for this comic.
         Body:
           {
-            "episode_id": "<uuid>",
+            "episode_id": "<int>",
             "progress_percent": 0..100,
             "comic_title": "...",        (optional)
             "episode_label": "...",      (optional)
@@ -474,10 +474,10 @@ class DigitalComicViewSet(viewsets.ModelViewSet):
         """
         Response:
         {
-          "episode_id": "<uuid>",
-          "next_episode_id": "<uuid>|null",
+          "episode_id": "<int>",
+          "next_episode_id": "<int>|null",
           "locked": true|false,
-          "comic_id": "<uuid>",
+          "comic_id": "<int>",
           "slices": [{ order, url, width, height }]
         }
         """

@@ -1,5 +1,4 @@
 from django.db import models
-import uuid
 
 
 class CarouselItemModel(models.Model):
@@ -9,7 +8,7 @@ class CarouselItemModel(models.Model):
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     order = models.PositiveIntegerField(default=0)
     # Target comic id to navigate on click:
-    # Digital comics use UUID (string), Motion comics use int -> store as string safely
+    # Both Digital and Motion comics now use simple integer IDs
     target_id = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
@@ -24,19 +23,8 @@ class CarouselItemModel(models.Model):
     def __str__(self):
         return f"{self.type} - Item {self.order}"
 
-    @staticmethod
-    def _normalize_uuid_hyphenated(raw: str) -> str:
-        """
-        Accepts either hyphenated UUID or 32-hex; returns hyphenated UUID.
-        If invalid, returns original.
-        """
-        try:
-            return str(uuid.UUID(str(raw)))
-        except Exception:
-            return raw
-
     def save(self, *args, **kwargs):
-        # Normalize digital IDs to hyphenated UUID at write-time
-        if self.type == 'digital' and self.target_id:
-            self.target_id = self._normalize_uuid_hyphenated(self.target_id)
+        # Normalize target_id - strip whitespace
+        if self.target_id:
+            self.target_id = str(self.target_id).strip()
         super().save(*args, **kwargs)
